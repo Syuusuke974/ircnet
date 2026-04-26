@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IRCnet</title>
+<style>
+/* ── Reset & tokens ────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg0: #0b0d12;
+  --bg1: #10131a;
+  --bg2: #161b26;
+  --bg3: #1d2436;
+  --bg4: #232c42;
+  --accent: #4e8cff;
+  --accent-dim: rgba(78,140,255,.15);
+  --purple: #9b7ff4;
+  --green: #2ec79a;
+  --amber: #f0a726;
+  --red: #f06060;
+  --text0: #e8edf8;
+  --text1: #9aabc8;
+  --text2: #4a5978;
+  --border: rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.13);
+  --mono: 'IBM Plex Mono', 'Fira Mono', 'Cascadia Code', monospace;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --radius: 6px;
+  --sidebar: 210px;
+}
+
+html, body { height: 100%; background: var(--bg0); color: var(--text0); font-family: var(--mono); font-size: 13px; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+
+a { color: var(--accent); }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── Titlebar ──────────────────────────────────────── */
+#titlebar {
+  height: 44px;
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 14px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.traffic { display: flex; gap: 7px; -webkit-app-region: no-drag; }
+.dot { width: 13px; height: 13px; border-radius: 50%; cursor: default; transition: filter .15s; }
+.dot:hover { filter: brightness(1.25); }
+.d-r { background: #ff5f57; }
+.d-y { background: #febc2e; }
+.d-g { background: #28c840; }
+#tb-title { flex: 1; text-align: center; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+#tb-status { font-size: 11px; display: flex; align-items: center; gap: 6px; color: var(--text1); }
+#status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); transition: background .3s; }
+#status-dot.on { background: var(--green); animation: blink 2.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Workspace ─────────────────────────────────────── */
+#workspace { flex: 1; display: flex; overflow: hidden; }
+
+/* ── Sidebar ───────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar);
+  min-width: var(--sidebar);
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#srv-header {
+  padding: 13px 15px 10px;
+  border-bottom: 1px solid var(--border);
+}
+#srv-name { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
+#srv-meta { font-size: 10px; color: var(--text2); margin-top: 3px; }
+
+.sb-label {
+  padding: 11px 15px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+#chan-list { flex: 1; overflow-y: auto; }
+.chan-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 15px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text1);
+  border-left: 2px solid transparent;
+  transition: background .1s, color .1s, border-color .1s;
+}
+.chan-row:hover { background: var(--bg2); color: var(--text0); }
+.chan-row.active { background: var(--bg2); border-left-color: var(--accent); color: var(--text0); font-weight: 500; }
+.chan-row.unread { color: var(--text0); }
+.chan-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-weight: 700;
+  display: none;
+}
+.chan-row.unread .chan-badge { display: inline; }
+
+#btn-join {
+  margin: 7px 14px 10px;
+  padding: 5px 10px;
+  background: none;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .15s;
+  width: calc(100% - 28px);
+}
+#btn-join:hover { border-color: var(--accent); color: var(--accent); }
+
+#user-section { border-top: 1px solid var(--border); }
+#user-list { max-height: 190px; overflow-y: auto; }
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 15px;
+  font-size: 11px;
+  color: var(--text1);
+}
+.u-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.u-on   { background: var(--green); }
+.u-away { background: var(--amber); }
+.u-op   { background: var(--purple); }
+#nick-box {
+  padding: 10px 15px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#my-nick { font-size: 11px; font-weight: 600; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#btn-nick {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text2);
+  font-size: 10px;
+  padding: 3px 7px;
+  cursor: pointer;
+  font-family: var(--mono);
+  transition: all .15s;
+}
+#btn-nick:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Main pane ─────────────────────────────────────── */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+#chan-header {
+  height: 44px;
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#hdr-name { font-size: 14px; font-weight: 600; }
+#hdr-sep  { color: var(--text2); }
+#hdr-topic { font-size: 11px; color: var(--text1); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); }
+#hdr-count { font-size: 10px; color: var(--text2); white-space: nowrap; }
+
+/* ── Messages ──────────────────────────────────────── */
+#msg-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.day-sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 8px;
+  font-size: 10px;
+  color: var(--text2);
+}
+.day-sep::before, .day-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.msg-group { margin: 3px 0; }
+.mg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; }
+.mg-nick { font-size: 12px; font-weight: 600; cursor: pointer; }
+.mg-nick:hover { text-decoration: underline; }
+.mg-time { font-size: 10px; color: var(--text2); }
+.msg-row  { display: flex; align-items: flex-start; gap: 6px; padding: 1px 0; line-height: 1.6; }
+.msg-ts   { font-size: 10px; color: transparent; min-width: 34px; text-align: right; margin-top: 3px; transition: color .1s; white-space: nowrap; }
+.msg-row:hover .msg-ts { color: var(--text2); }
+.msg-text { flex: 1; font-size: 12px; color: var(--text0); word-break: break-word; }
+.msg-text a { color: var(--accent); }
+.msg-system { font-size: 11px; color: var(--text2); font-style: italic; padding: 2px 0; margin: 1px 0; }
+.msg-system::before { content: '∗ '; }
+.msg-action { color: var(--purple); font-style: italic; }
+.msg-me .mg-nick { color: var(--accent) !important; }
+.msg-hl .msg-text {
+  background: rgba(78,140,255,.1);
+  border-left: 2px solid var(--accent);
+  padding-left: 6px;
+  margin-left: -8px;
+  border-radius: 2px;
+}
+#empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text2);
+  font-size: 12px;
+}
+#empty-state .big { font-size: 28px; margin-bottom: 4px; }
+
+/* ── Input ─────────────────────────────────────────── */
+#input-bar {
+  border-top: 1px solid var(--border);
+  background: var(--bg1);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+#input-prefix { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+#msg-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 7px 11px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text0);
+  outline: none;
+  transition: border-color .15s;
+}
+#msg-input:focus { border-color: var(--accent); }
+#msg-input::placeholder { color: var(--text2); }
+#msg-input:disabled { opacity: .4; }
+#btn-send {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 7px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, transform .1s;
+}
+#btn-send:hover { background: #3d7ae0; }
+#btn-send:active { transform: scale(.97); }
+#btn-send:disabled { opacity: .4; cursor: default; }
+
+/* ── Login overlay ─────────────────────────────────── */
+#login-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11,13,18,.92);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+#login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 32px 36px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+#login-card h1 { font-size: 18px; font-weight: 600; letter-spacing: .04em; }
+#login-card h1 span { color: var(--accent); }
+#login-card p { font-size: 11px; color: var(--text1); line-height: 1.6; margin-top: -8px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.field input {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 8px 11px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text0);
+  outline: none;
+  transition: border-color .15s;
+}
+.field input:focus { border-color: var(--accent); }
+#btn-connect {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  margin-top: 4px;
+}
+#btn-connect:hover { background: #3d7ae0; }
+#login-err { font-size: 11px; color: var(--red); display: none; }
+
+/* ── Toast ─────────────────────────────────────────── */
+#toasts {
+  position: fixed;
+  bottom: 18px; right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 200;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 8px 13px;
+  font-size: 11px;
+  color: var(--text1);
+  max-width: 270px;
+  animation: tIn .2s ease, tOut .3s ease 2.7s forwards;
+}
+.toast b { color: var(--text0); }
+@keyframes tIn  { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
+@keyframes tOut { to{opacity:0} }
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 600px) {
+  :root { --sidebar: 0px; }
+  #sidebar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-overlay">
+  <div id="login-card">
+    <h1>IRC<span>net</span></h1>
+    <p>Connectez-vous au serveur avec un pseudo et rejoignez un canal.</p>
+    <div class="field">
+      <label>Pseudo</label>
+      <input id="inp-nick" type="text" placeholder="MonPseudo" maxlength="30" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div class="field">
+      <label>Canal initial</label>
+      <input id="inp-chan" type="text" placeholder="#général" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div id="login-err"></div>
+    <button id="btn-connect">Connexion →</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="titlebar">
+  <div class="traffic">
+    <div class="dot d-r"></div>
+    <div class="dot d-y"></div>
+    <div class="dot d-g"></div>
+  </div>
+  <div id="tb-title">IRCnet</div>
+  <div id="tb-status"><span id="status-dot"></span><span id="status-label">déconnecté</span></div>
+</div>
+
+<div id="workspace">
+  <div id="sidebar">
+    <div id="srv-header">
+      <div id="srv-name">irc.localnet</div>
+      <div id="srv-meta">port 3000 · ws</div>
+    </div>
+    <div class="sb-label">Canaux</div>
+    <div id="chan-list"></div>
+    <button id="btn-join">＋ rejoindre un canal</button>
+    <div id="user-section">
+      <div class="sb-label">Utilisateurs</div>
+      <div id="user-list"></div>
+    </div>
+    <div id="nick-box">
+      <span id="my-nick">—</span>
+      <button id="btn-nick">nick</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="chan-header">
+      <span id="hdr-name">—</span>
+      <span id="hdr-sep">—</span>
+      <span id="hdr-topic"></span>
+      <span id="hdr-count"></span>
+    </div>
+    <div id="msg-box">
+      <div id="empty-state">
+        <div class="big">◈</div>
+        <div>Connectez-vous pour commencer</div>
+      </div>
+    </div>
+    <div id="input-bar">
+      <span id="input-prefix">—&gt;</span>
+      <input id="msg-input" placeholder="Message…" disabled autocomplete="off" spellcheck="false"/>
+      <button id="btn-send" disabled>Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+'use strict';
+
+// ── State ──────────────────────────────────────
+let ws        = null;
+let myNick    = '';
+let currentChan = '';
+const joined  = new Map();   // chanName → {topic, users:Set}
+const unread  = new Map();   // chanName → count
+const msgLog  = new Map();   // chanName → [{nick,text,type,time}]
+const userColors = {};
+
+const NICK_PALETTE = [
+  '#4e8cff','#9b7ff4','#2ec79a','#f0a726','#f06060',
+  '#38bdf8','#fb7185','#4ade80','#e879f9','#22d3ee'
+];
+function nickColor(n) {
+  if (!userColors[n]) {
+    let h = 0; for (const c of n) h = (h*31 + c.charCodeAt(0)) % NICK_PALETTE.length;
+    userColors[n] = NICK_PALETTE[h];
+  }
+  return userColors[n];
+}
+
+function ts() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/https?:\/\/\S+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+}
+
+// ── WebSocket ──────────────────────────────────
+function connect(nick, chan) {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url   = `${proto}//${location.host}/ws`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    setStatus(true);
+    sendRaw(`NICK ${nick}`);
+    sendRaw(`USER ${nick} 0 * :${nick}`);
+    if (chan) {
+      setTimeout(() => sendRaw(`JOIN ${chan}`), 500);
+    }
+  };
+
+  ws.onmessage = e => {
+    try { handleMsg(JSON.parse(e.data)); } catch {}
+  };
+
+  ws.onclose = () => {
+    setStatus(false);
+    showToast('Connexion perdue — rechargez la page');
+  };
+
+  ws.onerror = () => setStatus(false);
+}
+
+function sendRaw(line) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ raw: line }));
+  }
+}
+
+// ── IRC message handling ───────────────────────
+function handleMsg(obj) {
+  const raw = obj.raw || '';
+  const parts = raw.match(/^(?::(\S+) )?(\S+)((?:\s+[^:]\S*)*)?(?:\s+:(.*))?$/);
+  if (!parts) return;
+
+  const prefix   = parts[1] || '';
+  const cmd      = parts[2];
+  const middle   = (parts[3] || '').trim().split(/\s+/).filter(Boolean);
+  const trailing = parts[4];
+  const params   = trailing !== undefined ? [...middle, trailing] : middle;
+  const nick     = prefix.split('!')[0];
+
+  switch (cmd) {
+    case '001': // welcome
+      myNick = params[0] || myNick;
+      document.getElementById('my-nick').textContent = myNick;
+      document.getElementById('input-prefix').textContent = myNick + '>';
+      document.getElementById('msg-input').disabled = false;
+      document.getElementById('btn-send').disabled = false;
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('srv-name').textContent = prefix || 'irc.localnet';
+      break;
+
+    case '332': // topic reply
+      if (joined.has(params[1])) {
+        joined.get(params[1]).topic = params[2] || '';
+        if (params[1] === currentChan) renderHeader();
+      }
+      break;
+
+    case '331': break; // no topic
+
+    case '353': { // NAMES
+      const ch = params[2];
+      if (!joined.has(ch)) joined.set(ch, { topic: '', users: new Set() });
+      const names = (params[3] || '').split(' ').filter(Boolean);
+      for (const n of names) joined.get(ch).users.add(n.replace(/^[@+]/, ''));
+      if (ch === currentChan) renderUsers();
+      break;
+    }
+
+    case '366': break; // end of names
+
+    case 'JOIN': {
+      const ch = params[0] || trailing;
+      if (nick === myNick) {
+        if (!joined.has(ch)) joined.set(ch, { topic: '', users: new Set() });
+        if (!msgLog.has(ch)) msgLog.set(ch, []);
+        joined.get(ch).users.add(myNick);
+        switchChan(ch);
+        renderChanList();
+      } else {
+        if (joined.has(ch)) {
+          joined.get(ch).users.add(nick);
+          if (ch === currentChan) renderUsers();
+        }
+        pushLog(ch, { nick: 'srv', text: `${nick} a rejoint ${ch}`, type: 'system', time: ts() });
+      }
+      break;
+    }
+
+    case 'PART': {
+      const ch = params[0];
+      const reason = params[1] || '';
+      if (nick === myNick) {
+        joined.delete(ch);
+        msgLog.delete(ch);
+        unread.delete(ch);
+        if (currentChan === ch) {
+          currentChan = '';
+          renderHeader();
+          clearMessages();
+        }
+        renderChanList();
+      } else {
+        if (joined.has(ch)) {
+          joined.get(ch).users.delete(nick);
+          if (ch === currentChan) renderUsers();
+        }
+        pushLog(ch, { nick: 'srv', text: `${nick} a quitté ${ch}${reason ? ' ('+reason+')' : ''}`, type: 'system', time: ts() });
+      }
+      break;
+    }
+
+    case 'QUIT': {
+      const reason = params[0] || '';
+      for (const [ch, info] of joined) {
+        if (info.users.has(nick)) {
+          info.users.delete(nick);
+          pushLog(ch, { nick: 'srv', text: `${nick} a quitté le serveur${reason ? ' ('+reason+')' : ''}`, type: 'system', time: ts() });
+          if (ch === currentChan) renderUsers();
+        }
+      }
+      break;
+    }
+
+    case 'NICK': {
+      const newNick = params[0];
+      if (nick === myNick) {
+        myNick = newNick;
+        document.getElementById('my-nick').textContent = myNick;
+        document.getElementById('input-prefix').textContent = myNick + '>';
+      }
+      for (const [ch, info] of joined) {
+        if (info.users.has(nick)) {
+          info.users.delete(nick);
+          info.users.add(newNick);
+          pushLog(ch, { nick: 'srv', text: `${nick} est maintenant ${newNick}`, type: 'system', time: ts() });
+          if (ch === currentChan) renderUsers();
+        }
+      }
+      break;
+    }
+
+    case 'PRIVMSG': {
+      const target = params[0];
+      const text   = params[1] || '';
+      const isMe   = target === myNick;
+      const ch     = isMe ? nick : target;
+      const isAction = text.startsWith('\x01ACTION ');
+      const cleanText = isAction ? text.slice(8, -1) : text;
+      const type   = isAction ? 'action' : 'normal';
+
+      if (isMe && !joined.has(ch)) {
+        joined.set(ch, { topic: `PM avec ${nick}`, users: new Set([myNick, nick]) });
+        msgLog.set(ch, []);
+        renderChanList();
+      }
+
+      pushLog(ch, { nick, text: cleanText, type, time: ts() });
+
+      if (cleanText.toLowerCase().includes(myNick.toLowerCase()) && nick !== myNick) {
+        showToast(`<b>${nick}</b> vous a mentionné dans ${ch}`);
+      } else if (ch !== currentChan) {
+        showToast(`<b>${nick}</b> dans ${ch}: ${cleanText.slice(0,45)}${cleanText.length>45?'…':''}`);
+      }
+      break;
+    }
+
+    case 'TOPIC': {
+      const ch = params[0];
+      const topic = params[1] || '';
+      if (joined.has(ch)) joined.get(ch).topic = topic;
+      pushLog(ch, { nick: 'srv', text: `${nick} a changé le topic : ${topic}`, type: 'system', time: ts() });
+      if (ch === currentChan) renderHeader();
+      break;
+    }
+
+    case 'KICK': {
+      const ch     = params[0];
+      const target = params[1];
+      const reason = params[2] || '';
+      if (joined.has(ch)) joined.get(ch).users.delete(target);
+      pushLog(ch, { nick: 'srv', text: `${target} a été expulsé par ${nick}${reason ? ' ('+reason+')' : ''}`, type: 'system', time: ts() });
+      if (target === myNick) {
+        joined.delete(ch); msgLog.delete(ch);
+        if (currentChan === ch) { currentChan = ''; clearMessages(); }
+        renderChanList();
+        showToast(`Vous avez été expulsé de ${ch}`);
+      } else if (ch === currentChan) renderUsers();
+      break;
+    }
+
+    case 'MODE': {
+      const ch  = params[0];
+      const m   = params[1] || '';
+      const tgt = params[2] || '';
+      pushLog(ch, { nick: 'srv', text: `Mode ${m}${tgt?' '+tgt:''} défini par ${nick}`, type: 'system', time: ts() });
+      break;
+    }
+
+    case 'NOTICE': {
+      const text = params[1] || params[0] || '';
+      pushLog(currentChan || '__srv__', { nick: 'srv', text, type: 'system', time: ts() });
+      break;
+    }
+
+    case 'PONG': break;
+    case 'PING':
+      sendRaw(`PONG :${params[0] || 'pong'}`);
+      break;
+
+    case '305': case '306': break; // away ACK
+    case '372': case '375': case '376': break; // MOTD
+
+    case '401': showToast(`Pseudo introuvable : ${params[1]}`); break;
+    case '421': showToast(`Commande inconnue : ${params[1]}`); break;
+    case '433': {
+      const badNick = params[1];
+      showToast(`Pseudo ${badNick} déjà utilisé`);
+      document.getElementById('login-err').textContent = `Le pseudo "${badNick}" est déjà pris.`;
+      document.getElementById('login-err').style.display = 'block';
+      document.getElementById('login-overlay').style.display = 'flex';
+      break;
+    }
+    case '482': showToast('Vous n\'êtes pas opérateur de ce canal'); break;
+
+    default: break;
+  }
+}
+
+// ── Log & render messages ──────────────────────
+function pushLog(ch, entry) {
+  if (!ch) return;
+  if (!msgLog.has(ch)) msgLog.set(ch, []);
+  msgLog.get(ch).push(entry);
+
+  if (ch === currentChan) {
+    appendMsg(entry);
+    scrollBottom();
+  } else if (entry.type !== 'system') {
+    unread.set(ch, (unread.get(ch) || 0) + 1);
+    renderChanList();
+  }
+}
+
+function appendMsg(entry) {
+  const box = document.getElementById('msg-box');
+
+  // Remove empty state
+  const es = document.getElementById('empty-state');
+  if (es) es.remove();
+
+  if (entry.type === 'system') {
+    const d = document.createElement('div');
+    d.className = 'msg-system';
+    d.textContent = entry.text;
+    box.appendChild(d);
+    return;
+  }
+
+  if (entry.type === 'action') {
+    const d = document.createElement('div');
+    d.className = 'msg-system msg-action';
+    d.textContent = `* ${entry.nick} ${entry.text}`;
+    box.appendChild(d);
+    return;
+  }
+
+  // Check if we can append to last group
+  const groups = box.querySelectorAll('.msg-group');
+  const last = groups[groups.length - 1];
+  const isMe = entry.nick === myNick;
+  const hl   = !isMe && entry.text.toLowerCase().includes(myNick.toLowerCase());
+
+  if (last && last.dataset.nick === entry.nick) {
+    last.appendChild(makeRow(entry, hl));
+    return;
+  }
+
+  const group = document.createElement('div');
+  group.className = 'msg-group' + (isMe ? ' msg-me' : '');
+  group.dataset.nick = entry.nick;
+
+  const hdr = document.createElement('div');
+  hdr.className = 'mg-header';
+  hdr.innerHTML = `<span class="mg-nick" style="color:${nickColor(entry.nick)}" data-nick="${entry.nick}">${entry.nick}</span><span class="mg-time">${entry.time}</span>`;
+  hdr.querySelector('.mg-nick').addEventListener('click', () => {
+    document.getElementById('msg-input').value = entry.nick + ': ';
+    document.getElementById('msg-input').focus();
+  });
+  group.appendChild(hdr);
+  group.appendChild(makeRow(entry, hl));
+  box.appendChild(group);
+}
+
+function makeRow(entry, hl) {
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (hl ? ' msg-hl' : '');
+  row.innerHTML = `<span class="msg-ts">${entry.time}</span><span class="msg-text">${escHtml(entry.text)}</span>`;
+  return row;
+}
+
+function clearMessages() {
+  const box = document.getElementById('msg-box');
+  box.innerHTML = '<div id="empty-state"><div class="big">◈</div><div>Rejoignez un canal</div></div>';
+}
+
+function renderMessages() {
+  const box = document.getElementById('msg-box');
+  box.innerHTML = '';
+
+  const entries = msgLog.get(currentChan) || [];
+  if (!entries.length) {
+    box.innerHTML = '<div id="empty-state"><div class="big">◈</div><div>Aucun message — dites bonjour !</div></div>';
+    return;
+  }
+
+  const sep = document.createElement('div');
+  sep.className = 'day-sep';
+  sep.textContent = "Aujourd'hui";
+  box.appendChild(sep);
+
+  let lastNick = null;
+  for (const e of entries) {
+    if (e.type !== 'normal' && e.type !== 'action') {
+      const d = document.createElement('div');
+      d.className = e.type === 'action' ? 'msg-system msg-action' : 'msg-system';
+      d.textContent = e.type === 'action' ? `* ${e.nick} ${e.text}` : e.text;
+      box.appendChild(d);
+      lastNick = null;
+      continue;
+    }
+    const isMe = e.nick === myNick;
+    const hl   = !isMe && e.text.toLowerCase().includes(myNick.toLowerCase());
+    if (e.nick === lastNick) {
+      const groups = box.querySelectorAll('.msg-group');
+      groups[groups.length - 1].appendChild(makeRow(e, hl));
+    } else {
+      const group = document.createElement('div');
+      group.className = 'msg-group' + (isMe ? ' msg-me' : '');
+      group.dataset.nick = e.nick;
+      const hdr = document.createElement('div');
+      hdr.className = 'mg-header';
+      hdr.innerHTML = `<span class="mg-nick" style="color:${nickColor(e.nick)}">${e.nick}</span><span class="mg-time">${e.time}</span>`;
+      group.appendChild(hdr);
+      group.appendChild(makeRow(e, hl));
+      box.appendChild(group);
+    }
+    lastNick = e.nick;
+  }
+  scrollBottom();
+}
+
+function scrollBottom() {
+  const box = document.getElementById('msg-box');
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── Channel switching ──────────────────────────
+function switchChan(ch) {
+  currentChan = ch;
+  unread.delete(ch);
+  renderChanList();
+  renderHeader();
+  renderUsers();
+  renderMessages();
+}
+
+function renderHeader() {
+  const info = joined.get(currentChan);
+  document.getElementById('hdr-name').textContent = currentChan || '—';
+  document.getElementById('hdr-topic').textContent = info?.topic || '';
+  document.getElementById('hdr-count').textContent = info ? info.users.size + ' utilisateurs' : '';
+}
+
+function renderChanList() {
+  const el = document.getElementById('chan-list');
+  el.innerHTML = '';
+  for (const ch of joined.keys()) {
+    const u = unread.get(ch) || 0;
+    const row = document.createElement('div');
+    row.className = 'chan-row' + (ch === currentChan ? ' active' : '') + (u ? ' unread' : '');
+    row.innerHTML = `<span>${ch}</span><span class="chan-badge">${u || ''}</span>`;
+    row.addEventListener('click', () => switchChan(ch));
+    el.appendChild(row);
+  }
+}
+
+function renderUsers() {
+  const el   = document.getElementById('user-list');
+  const info = joined.get(currentChan);
+  el.innerHTML = '';
+  if (!info) return;
+  for (const nick of info.users) {
+    const isOp = nick.startsWith('@');
+    const cleanNick = nick.replace(/^[@+]/, '');
+    const row = document.createElement('div');
+    row.className = 'user-row';
+    row.innerHTML = `<span class="u-dot ${isOp ? 'u-op' : 'u-on'}"></span><span style="color:${nickColor(cleanNick)};font-size:11px">${nick}</span>`;
+    el.appendChild(row);
+  }
+  document.getElementById('hdr-count').textContent = info.users.size + ' utilisateurs';
+}
+
+// ── Status ─────────────────────────────────────
+function setStatus(on) {
+  document.getElementById('status-dot').className = on ? 'on' : '';
+  document.getElementById('status-label').textContent = on ? 'connecté' : 'déconnecté';
+}
+
+// ── Toast ──────────────────────────────────────
+function showToast(html) {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = html;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3100);
+}
+
+// ── Input / commands ───────────────────────────
+function send() {
+  const input = document.getElementById('msg-input');
+  const raw   = input.value.trim();
+  if (!raw) return;
+  input.value = '';
+
+  if (raw.startsWith('/')) {
+    const parts = raw.slice(1).split(' ');
+    const cmd   = parts[0].toLowerCase();
+
+    if (cmd === 'join') {
+      const ch = parts[1];
+      if (ch) sendRaw(`JOIN ${ch}`);
+    } else if (cmd === 'part') {
+      const ch = parts[1] || currentChan;
+      sendRaw(`PART ${ch} :${parts.slice(2).join(' ') || 'Leaving'}`);
+    } else if (cmd === 'nick') {
+      sendRaw(`NICK ${parts[1]}`);
+    } else if (cmd === 'topic') {
+      sendRaw(`TOPIC ${currentChan} :${parts.slice(1).join(' ')}`);
+    } else if (cmd === 'me') {
+      sendRaw(`PRIVMSG ${currentChan} :\x01ACTION ${parts.slice(1).join(' ')}\x01`);
+      pushLog(currentChan, { nick: myNick, text: parts.slice(1).join(' '), type: 'action', time: ts() });
+    } else if (cmd === 'msg') {
+      const to   = parts[1];
+      const text = parts.slice(2).join(' ');
+      sendRaw(`PRIVMSG ${to} :${text}`);
+      pushLog(currentChan, { nick: 'srv', text: `→ ${to}: ${text}`, type: 'system', time: ts() });
+    } else if (cmd === 'kick') {
+      sendRaw(`KICK ${currentChan} ${parts[1]} :${parts.slice(2).join(' ') || 'Kicked'}`);
+    } else if (cmd === 'op') {
+      sendRaw(`MODE ${currentChan} +o ${parts[1]}`);
+    } else if (cmd === 'away') {
+      sendRaw(`AWAY :${parts.slice(1).join(' ')}`);
+    } else if (cmd === 'back') {
+      sendRaw('AWAY');
+    } else if (cmd === 'list') {
+      sendRaw('LIST');
+    } else if (cmd === 'whois') {
+      sendRaw(`WHOIS ${parts[1]}`);
+    } else if (cmd === 'quit') {
+      sendRaw(`QUIT :${parts.slice(1).join(' ') || 'Goodbye'}`);
+    } else if (cmd === 'help') {
+      const cmds = [
+        '/join #canal — rejoindre',
+        '/part [#canal] — quitter',
+        '/nick pseudo — changer de pseudo',
+        '/topic texte — changer le topic',
+        '/me action — action /me',
+        '/msg pseudo texte — message privé',
+        '/kick pseudo [raison] — expulser',
+        '/op pseudo — donner les droits op',
+        '/away [message] — marquer absent',
+        '/back — revenir',
+        '/list — lister les canaux',
+        '/whois pseudo — infos sur un utilisateur',
+        '/quit [raison] — quitter',
+      ];
+      for (const c of cmds) {
+        pushLog(currentChan, { nick: 'srv', text: c, type: 'system', time: ts() });
+      }
+    } else {
+      showToast(`Commande inconnue : /${cmd} — /help`);
+    }
+    return;
+  }
+
+  if (!currentChan) { showToast('Rejoignez un canal d\'abord !'); return; }
+  sendRaw(`PRIVMSG ${currentChan} :${raw}`);
+  pushLog(currentChan, { nick: myNick, text: raw, type: 'normal', time: ts() });
+}
+
+// ── Event bindings ─────────────────────────────
+document.getElementById('btn-send').addEventListener('click', send);
+document.getElementById('msg-input').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+document.getElementById('btn-join').addEventListener('click', () => {
+  const ch = prompt('Canal à rejoindre (ex: #général)');
+  if (ch) sendRaw(`JOIN ${ch.startsWith('#') ? ch : '#' + ch}`);
+});
+
+document.getElementById('btn-nick').addEventListener('click', () => {
+  const n = prompt('Nouveau pseudo :');
+  if (n) sendRaw(`NICK ${n}`);
+});
+
+document.getElementById('btn-connect').addEventListener('click', () => {
+  const nick = document.getElementById('inp-nick').value.trim();
+  const chan  = document.getElementById('inp-chan').value.trim() || '#général';
+  const err   = document.getElementById('login-err');
+  if (!nick) { err.textContent = 'Le pseudo est requis.'; err.style.display = 'block'; return; }
+  if (!/^[a-zA-Z_\-\[\]\\^{}|`][a-zA-Z0-9_\-\[\]\\^{}|`]{0,29}$/.test(nick)) {
+    err.textContent = 'Pseudo invalide (lettres, chiffres, _ - [ ] uniquement).';
+    err.style.display = 'block'; return;
+  }
+  err.style.display = 'none';
+  connect(nick, chan.startsWith('#') ? chan : '#' + chan);
+});
+
+document.getElementById('inp-nick').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('inp-chan').focus();
+});
+document.getElementById('inp-chan').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-connect').click();
+});
+
+// Ping keepalive
+setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) sendRaw('PING :keepalive'); }, 60000);
+</script>
+</body>
+</html>
