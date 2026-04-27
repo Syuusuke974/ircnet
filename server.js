@@ -450,8 +450,8 @@ const MIME = {
 };
 
 const httpServer = http.createServer((req, res) => {
-  let filePath = path.join(__dirname, 'public',
-    req.url === '/' ? 'index.html' : req.url);
+  let filePath = path.join(__dirname,
+    req.url === '/' ? 'index.html' : req.url.replace(/^\//, ''));
 
   const ext = path.extname(filePath);
   const mime = MIME[ext] || 'text/plain';
