@@ -2,1013 +2,992 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>IRCnet</title>
 <style>
-/* ── Reset & tokens ────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root{
+  --bg0:#090b10;--bg1:#0e1118;--bg2:#13171f;--bg3:#1a1f2e;--bg4:#1f2638;--bg5:#252d42;
+  --ac:#4f87ff;--ac2:#7b6cf0;--ac-dim:rgba(79,135,255,.14);
+  --green:#27c98a;--amber:#f0a726;--red:#f05454;--purple:#9b7ff4;--cyan:#29c4d8;
+  --t0:#e8edf8;--t1:#8fa3c8;--t2:#3f4f6e;--t3:#262f47;
+  --bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);
+  --mono:'IBM Plex Mono','Cascadia Code','Fira Mono',monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;--r:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg0);color:var(--t0);font-family:var(--mono);font-size:13px;overflow:hidden;}
+body{display:flex;flex-direction:column;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
+button{cursor:pointer;font-family:var(--mono);}
 
-:root {
-  --bg0: #0b0d12;
-  --bg1: #10131a;
-  --bg2: #161b26;
-  --bg3: #1d2436;
-  --bg4: #232c42;
-  --accent: #4e8cff;
-  --accent-dim: rgba(78,140,255,.15);
-  --purple: #9b7ff4;
-  --green: #2ec79a;
-  --amber: #f0a726;
-  --red: #f06060;
-  --text0: #e8edf8;
-  --text1: #9aabc8;
-  --text2: #4a5978;
-  --border: rgba(255,255,255,.07);
-  --border2: rgba(255,255,255,.13);
-  --mono: 'IBM Plex Mono', 'Fira Mono', 'Cascadia Code', monospace;
-  --sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --radius: 6px;
-  --sidebar: 210px;
-}
+/* Titlebar */
+#titlebar{height:42px;background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 14px;gap:12px;flex-shrink:0;user-select:none;}
+.traffic{display:flex;gap:6px;}
+.dot{width:13px;height:13px;border-radius:50%;transition:filter .15s;}
+.dot:hover{filter:brightness(1.3);}
+.d-r{background:#ff5f57;}.d-y{background:#febc2e;}.d-g{background:#28c840;}
+#tb-logo{flex:1;text-align:center;font-size:12px;font-weight:700;letter-spacing:.15em;color:var(--t2);}
+#tb-logo em{color:var(--ac);font-style:normal;}
+#tb-right{display:flex;align-items:center;gap:10px;}
+#conn-indicator{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t2);}
+#conn-dot{width:7px;height:7px;border-radius:50%;background:var(--red);transition:background .3s;}
+#conn-dot.on{background:var(--green);animation:blink 2.5s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+#onlineCnt{font-size:10px;color:var(--t2);}
 
-html, body { height: 100%; background: var(--bg0); color: var(--text0); font-family: var(--mono); font-size: 13px; overflow: hidden; }
-body { display: flex; flex-direction: column; }
+/* Workspace */
+#workspace{flex:1;display:flex;overflow:hidden;}
 
-a { color: var(--accent); }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+/* Sidebar */
+#sidebar{width:220px;min-width:220px;background:var(--bg1);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden;}
+#my-profile{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+#my-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;position:relative;}
+#my-ring{position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--green);transition:border-color .3s;}
+#my-info{flex:1;min-width:0;}
+#my-nick{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#my-rank{font-size:10px;color:var(--t2);margin-top:2px;}
+#my-status-btn{background:none;border:1px solid var(--bd2);border-radius:4px;color:var(--t2);font-size:10px;padding:3px 7px;transition:all .15s;flex-shrink:0;}
+#my-status-btn:hover{border-color:var(--ac);color:var(--ac);}
+.sblabel{padding:10px 14px 4px;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t2);display:flex;align-items:center;justify-content:space-between;}
+.sbact{background:none;border:none;color:var(--t2);font-size:15px;line-height:1;padding:0 2px;transition:color .15s;}
+.sbact:hover{color:var(--ac);}
+#chan-list{overflow-y:auto;max-height:42%;}
+.chan-row{display:flex;align-items:center;gap:7px;padding:5px 14px;cursor:pointer;font-size:12px;color:var(--t1);border-left:2px solid transparent;transition:background .1s,border-color .15s;}
+.chan-row:hover{background:var(--bg2);color:var(--t0);}
+.chan-row.active{background:var(--bg3);border-left-color:var(--ac);color:var(--t0);}
+.chan-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chan-badge{background:var(--ac);color:#fff;font-size:9px;border-radius:10px;padding:1px 5px;font-weight:700;display:none;}
+.chan-row.unread .chan-badge{display:inline;}
+.chan-row.unread .chan-name{color:var(--t0);font-weight:500;}
+#user-section{flex:1;overflow:hidden;display:flex;flex-direction:column;border-top:1px solid var(--bd);}
+#user-list{flex:1;overflow-y:auto;padding-bottom:8px;}
+.ugrp-label{padding:8px 14px 3px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t2);}
+.user-row{display:flex;align-items:center;gap:8px;padding:4px 14px;font-size:11px;color:var(--t1);cursor:pointer;transition:background .1s;}
+.user-row:hover{background:var(--bg2);}
+.u-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;position:relative;}
+.u-dot{position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--bg1);background:var(--green);}
+.u-dot.away{background:var(--amber);}.u-dot.busy{background:var(--red);}.u-dot.sleep{background:var(--t2);}.u-dot.gaming{background:var(--purple);}.u-dot.coding{background:var(--cyan);}.u-dot.custom{background:var(--t1);}
+.u-info{flex:1;min-width:0;}
+.u-name{font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.u-stlabel{font-size:9px;color:var(--t2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.u-rbadge{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;flex-shrink:0;}
 
-/* ── Titlebar ──────────────────────────────────────── */
-#titlebar {
-  height: 44px;
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  gap: 14px;
-  flex-shrink: 0;
-  -webkit-app-region: drag;
-  user-select: none;
-}
-.traffic { display: flex; gap: 7px; -webkit-app-region: no-drag; }
-.dot { width: 13px; height: 13px; border-radius: 50%; cursor: default; transition: filter .15s; }
-.dot:hover { filter: brightness(1.25); }
-.d-r { background: #ff5f57; }
-.d-y { background: #febc2e; }
-.d-g { background: #28c840; }
-#tb-title { flex: 1; text-align: center; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
-#tb-status { font-size: 11px; display: flex; align-items: center; gap: 6px; color: var(--text1); }
-#status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); transition: background .3s; }
-#status-dot.on { background: var(--green); animation: blink 2.5s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+/* Main */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+#chan-header{height:46px;background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 16px;gap:8px;flex-shrink:0;}
+#hdr-name{font-size:14px;font-weight:700;}
+#hdr-badges{display:flex;gap:4px;flex-shrink:0;}
+.hbadge{font-size:9px;padding:2px 6px;border-radius:10px;font-weight:600;}
+.hb-sec{background:rgba(240,167,38,.15);color:var(--amber);}
+.hb-inv{background:rgba(155,127,244,.15);color:var(--purple);}
+#hdr-topic{flex:1;font-size:11px;color:var(--t1);font-family:var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+#hdr-topic:hover{color:var(--t0);}
+#hdr-acts{display:flex;gap:5px;}
+.hbtn{background:none;border:1px solid var(--bd2);border-radius:4px;color:var(--t2);font-size:10px;padding:4px 9px;transition:all .15s;}
+.hbtn:hover{border-color:var(--ac);color:var(--ac);}
+#hdr-cnt{font-size:10px;color:var(--t2);white-space:nowrap;}
 
-/* ── Workspace ─────────────────────────────────────── */
-#workspace { flex: 1; display: flex; overflow: hidden; }
+/* Messages */
+#msg-box{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:0;}
+.day-sep{display:flex;align-items:center;gap:10px;margin:10px 0 8px;font-size:10px;color:var(--t2);}
+.day-sep::before,.day-sep::after{content:'';flex:1;height:1px;background:var(--bd);}
+.mgrp{margin:3px 0;}
+.mg-hdr{display:flex;align-items:baseline;gap:7px;margin-bottom:1px;}
+.mg-nick{font-size:12px;font-weight:600;cursor:pointer;}
+.mg-nick:hover{text-decoration:underline;}
+.mg-rbadge{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600;}
+.mg-time{font-size:10px;color:var(--t2);}
+.msg-row{display:flex;align-items:flex-start;gap:6px;padding:1px 0;line-height:1.6;}
+.msg-ts{font-size:10px;color:transparent;min-width:34px;text-align:right;margin-top:3px;transition:color .1s;}
+.msg-row:hover .msg-ts{color:var(--t2);}
+.msg-text{flex:1;font-size:12px;color:var(--t0);word-break:break-word;}
+.msg-text a{color:var(--ac);}
+.msg-me .mg-nick{color:var(--ac) !important;}
+.msg-hl .msg-text{background:var(--ac-dim);border-left:2px solid var(--ac);padding-left:6px;margin-left:-8px;border-radius:2px;}
+.evtsys{font-size:11px;color:var(--t2);font-style:italic;padding:2px 0;margin:1px 0;}
+.evtsys::before{content:'∗ ';}
+.evtjoin{color:var(--green);font-size:11px;padding:1px 0;font-style:italic;}
+.evtjoin::before{content:'→ ';}
+.evtpart{color:var(--t2);font-size:11px;padding:1px 0;font-style:italic;}
+.evtpart::before{content:'← ';}
+.evtkick{color:var(--red);font-size:11px;padding:1px 0;font-style:italic;}
+.evtkick::before{content:'⚡ ';}
+.evtrank{color:var(--amber);font-size:11px;padding:1px 0;font-style:italic;}
+.evtrank::before{content:'★ ';}
+.evtaction{color:var(--purple);font-size:12px;font-style:italic;padding:2px 0;}
+#empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t2);}
 
-/* ── Sidebar ───────────────────────────────────────── */
-#sidebar {
-  width: var(--sidebar);
-  min-width: var(--sidebar);
-  background: var(--bg1);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-#srv-header {
-  padding: 13px 15px 10px;
-  border-bottom: 1px solid var(--border);
-}
-#srv-name { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
-#srv-meta { font-size: 10px; color: var(--text2); margin-top: 3px; }
+/* Input */
+#input-bar{border-top:1px solid var(--bd);background:var(--bg1);padding:9px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+#input-pfx{font-size:12px;font-weight:600;color:var(--ac);white-space:nowrap;}
+#msg-input{flex:1;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);padding:7px 11px;font-family:var(--mono);font-size:12px;color:var(--t0);outline:none;transition:border-color .15s;}
+#msg-input:focus{border-color:var(--ac);}
+#msg-input::placeholder{color:var(--t2);}
+#msg-input:disabled{opacity:.4;}
+#btn-send{background:var(--ac);color:#fff;border:none;border-radius:var(--r);padding:7px 16px;font-size:12px;font-weight:700;transition:background .15s,transform .1s;}
+#btn-send:hover{background:#3c72e0;}
+#btn-send:active{transform:scale(.97);}
+#btn-send:disabled{opacity:.4;}
 
-.sb-label {
-  padding: 11px 15px 4px;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: .13em;
-  text-transform: uppercase;
-  color: var(--text2);
-}
+/* Modals */
+.mo{position:fixed;inset:0;background:rgba(9,11,16,.88);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;}
+.mc{background:var(--bg2);border:1px solid var(--bd2);border-radius:10px;padding:26px 30px;display:flex;flex-direction:column;gap:14px;min-width:340px;max-width:490px;max-height:92vh;overflow-y:auto;}
+.mc h2{font-size:16px;font-weight:700;letter-spacing:.04em;}
+.mc h2 em{color:var(--ac);font-style:normal;}
+.msub{font-size:11px;color:var(--t1);line-height:1.6;margin-top:-6px;}
+.fld{display:flex;flex-direction:column;gap:5px;}
+.fld label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);font-weight:600;}
+.fld input,.fld select{background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);padding:8px 11px;font-family:var(--mono);font-size:12px;color:var(--t0);outline:none;transition:border-color .15s;width:100%;}
+.fld input:focus,.fld select:focus{border-color:var(--ac);}
+.fld select option{background:var(--bg3);}
+.frow{display:flex;gap:10px;}
+.frow .fld{flex:1;}
+.trow{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);}
+.tlabel{font-size:12px;color:var(--t1);}
+.tgl{position:relative;display:inline-block;width:36px;height:20px;}
+.tgl input{opacity:0;width:0;height:0;}
+.tgl-sl{position:absolute;inset:0;background:var(--t3);border-radius:20px;transition:.3s;cursor:pointer;}
+.tgl-sl::before{content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.tgl input:checked+.tgl-sl{background:var(--ac);}
+.tgl input:checked+.tgl-sl::before{transform:translateX(16px);}
+.brow{display:flex;gap:8px;margin-top:4px;}
+.bprimary{background:var(--ac);color:#fff;border:none;border-radius:var(--r);padding:9px 20px;font-size:12px;font-weight:600;transition:background .15s;flex:1;}
+.bprimary:hover{background:#3c72e0;}
+.bsec{background:none;border:1px solid var(--bd2);color:var(--t1);border-radius:var(--r);padding:9px 16px;font-size:12px;transition:all .15s;}
+.bsec:hover{border-color:var(--t1);color:var(--t0);}
+.bdanger{background:rgba(240,84,84,.12);border:1px solid rgba(240,84,84,.3);color:var(--red);border-radius:var(--r);padding:9px 16px;font-size:12px;transition:all .15s;}
+.bdanger:hover{background:rgba(240,84,84,.22);}
+.errmsg{font-size:11px;color:var(--red);display:none;}
+.errmsg.show{display:block;}
+.sec-section{background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px;}
+.sec-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t2);}
 
-#chan-list { flex: 1; overflow-y: auto; }
-.chan-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 15px;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--text1);
-  border-left: 2px solid transparent;
-  transition: background .1s, color .1s, border-color .1s;
-}
-.chan-row:hover { background: var(--bg2); color: var(--text0); }
-.chan-row.active { background: var(--bg2); border-left-color: var(--accent); color: var(--text0); font-weight: 500; }
-.chan-row.unread { color: var(--text0); }
-.chan-badge {
-  margin-left: auto;
-  background: var(--accent);
-  color: #fff;
-  font-size: 9px;
-  border-radius: 10px;
-  padding: 1px 6px;
-  font-weight: 700;
-  display: none;
-}
-.chan-row.unread .chan-badge { display: inline; }
+/* Status grid */
+.stgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+.stopt{display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.stopt:hover{background:var(--bg4);}
+.stopt.active{border-color:var(--ac);background:var(--ac-dim);}
+.st-emoji{font-size:17px;width:22px;text-align:center;}
+.st-name{font-size:12px;font-weight:500;}
+.st-dur{font-size:9px;color:var(--t2);}
 
-#btn-join {
-  margin: 7px 14px 10px;
-  padding: 5px 10px;
-  background: none;
-  border: 1px dashed var(--border2);
-  border-radius: var(--radius);
-  color: var(--text2);
-  font-family: var(--mono);
-  font-size: 11px;
-  cursor: pointer;
-  text-align: left;
-  transition: all .15s;
-  width: calc(100% - 28px);
-}
-#btn-join:hover { border-color: var(--accent); color: var(--accent); }
+/* Rank list */
+.rklist{display:flex;flex-direction:column;gap:6px;}
+.rkopt{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);cursor:pointer;transition:all .15s;}
+.rkopt:hover{background:var(--bg4);}
+.rkopt.active{border-color:var(--ac);}
+.rkav{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.rk-name{font-size:12px;font-weight:600;}
+.rk-desc{font-size:10px;color:var(--t2);}
 
-#user-section { border-top: 1px solid var(--border); }
-#user-list { max-height: 190px; overflow-y: auto; }
-.user-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 15px;
-  font-size: 11px;
-  color: var(--text1);
-}
-.u-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.u-on   { background: var(--green); }
-.u-away { background: var(--amber); }
-.u-op   { background: var(--purple); }
-#nick-box {
-  padding: 10px 15px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-#my-nick { font-size: 11px; font-weight: 600; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#btn-nick {
-  background: none;
-  border: 1px solid var(--border2);
-  border-radius: 4px;
-  color: var(--text2);
-  font-size: 10px;
-  padding: 3px 7px;
-  cursor: pointer;
-  font-family: var(--mono);
-  transition: all .15s;
-}
-#btn-nick:hover { border-color: var(--accent); color: var(--accent); }
+/* Context menu */
+#ctx{position:fixed;background:var(--bg2);border:1px solid var(--bd2);border-radius:8px;padding:5px;z-index:300;min-width:185px;box-shadow:0 8px 32px rgba(0,0,0,.55);}
+.ctx-hd{padding:8px 10px;border-bottom:1px solid var(--bd);margin-bottom:4px;}
+.ctx-hd-nick{font-size:13px;font-weight:700;}
+.ctx-hd-sub{font-size:10px;color:var(--t2);margin-top:2px;}
+.ctx-sec{padding:4px 10px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t2);margin-top:4px;}
+.ctx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--t1);transition:all .1s;}
+.ctx-item:hover{background:var(--bg3);color:var(--t0);}
+.ctx-item.danger{color:var(--red);}
+.ctx-item.danger:hover{background:rgba(240,84,84,.1);}
+.ctx-ico{width:14px;text-align:center;font-size:12px;}
 
-/* ── Main pane ─────────────────────────────────────── */
-#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+/* Invite picker */
+.inv-pick{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;}
+.inv-user{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;cursor:pointer;transition:background .1s;}
+.inv-user:hover{background:var(--bg4);}
+.inv-user.sel{background:var(--ac-dim);border:1px solid var(--ac);border-radius:5px;}
 
-#chan-header {
-  height: 44px;
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
-  gap: 10px;
-  flex-shrink: 0;
-}
-#hdr-name { font-size: 14px; font-weight: 600; }
-#hdr-sep  { color: var(--text2); }
-#hdr-topic { font-size: 11px; color: var(--text1); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--sans); }
-#hdr-count { font-size: 10px; color: var(--text2); white-space: nowrap; }
+/* Toasts */
+#toasts{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:7px;z-index:400;pointer-events:none;}
+.toast{background:var(--bg3);border:1px solid var(--bd2);border-left:3px solid var(--ac);border-radius:6px;padding:8px 13px;font-size:11px;color:var(--t1);max-width:280px;animation:tIn .2s ease,tOut .3s ease 2.7s forwards;}
+.toast.warn{border-left-color:var(--amber);}
+.toast.err{border-left-color:var(--red);}
+.toast b{color:var(--t0);}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+@keyframes tOut{to{opacity:0}}
 
-/* ── Messages ──────────────────────────────────────── */
-#msg-box {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.day-sep {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 12px 0 8px;
-  font-size: 10px;
-  color: var(--text2);
-}
-.day-sep::before, .day-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-.msg-group { margin: 3px 0; }
-.mg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; }
-.mg-nick { font-size: 12px; font-weight: 600; cursor: pointer; }
-.mg-nick:hover { text-decoration: underline; }
-.mg-time { font-size: 10px; color: var(--text2); }
-.msg-row  { display: flex; align-items: flex-start; gap: 6px; padding: 1px 0; line-height: 1.6; }
-.msg-ts   { font-size: 10px; color: transparent; min-width: 34px; text-align: right; margin-top: 3px; transition: color .1s; white-space: nowrap; }
-.msg-row:hover .msg-ts { color: var(--text2); }
-.msg-text { flex: 1; font-size: 12px; color: var(--text0); word-break: break-word; }
-.msg-text a { color: var(--accent); }
-.msg-system { font-size: 11px; color: var(--text2); font-style: italic; padding: 2px 0; margin: 1px 0; }
-.msg-system::before { content: '∗ '; }
-.msg-action { color: var(--purple); font-style: italic; }
-.msg-me .mg-nick { color: var(--accent) !important; }
-.msg-hl .msg-text {
-  background: rgba(78,140,255,.1);
-  border-left: 2px solid var(--accent);
-  padding-left: 6px;
-  margin-left: -8px;
-  border-radius: 2px;
-}
-#empty-state {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 12px;
-  color: var(--text2);
-  font-size: 12px;
-}
-#empty-state .big { font-size: 28px; margin-bottom: 4px; }
-
-/* ── Input ─────────────────────────────────────────── */
-#input-bar {
-  border-top: 1px solid var(--border);
-  background: var(--bg1);
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  flex-shrink: 0;
-}
-#input-prefix { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
-#msg-input {
-  flex: 1;
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  padding: 7px 11px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text0);
-  outline: none;
-  transition: border-color .15s;
-}
-#msg-input:focus { border-color: var(--accent); }
-#msg-input::placeholder { color: var(--text2); }
-#msg-input:disabled { opacity: .4; }
-#btn-send {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  padding: 7px 16px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background .15s, transform .1s;
-}
-#btn-send:hover { background: #3d7ae0; }
-#btn-send:active { transform: scale(.97); }
-#btn-send:disabled { opacity: .4; cursor: default; }
-
-/* ── Login overlay ─────────────────────────────────── */
-#login-overlay {
-  position: fixed; inset: 0;
-  background: rgba(11,13,18,.92);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-#login-card {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 10px;
-  padding: 32px 36px;
-  width: 340px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-#login-card h1 { font-size: 18px; font-weight: 600; letter-spacing: .04em; }
-#login-card h1 span { color: var(--accent); }
-#login-card p { font-size: 11px; color: var(--text1); line-height: 1.6; margin-top: -8px; }
-.field { display: flex; flex-direction: column; gap: 5px; }
-.field label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
-.field input {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  padding: 8px 11px;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text0);
-  outline: none;
-  transition: border-color .15s;
-}
-.field input:focus { border-color: var(--accent); }
-#btn-connect {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  padding: 10px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s;
-  margin-top: 4px;
-}
-#btn-connect:hover { background: #3d7ae0; }
-#login-err { font-size: 11px; color: var(--red); display: none; }
-
-/* ── Toast ─────────────────────────────────────────── */
-#toasts {
-  position: fixed;
-  bottom: 18px; right: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 200;
-  pointer-events: none;
-}
-.toast {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  padding: 8px 13px;
-  font-size: 11px;
-  color: var(--text1);
-  max-width: 270px;
-  animation: tIn .2s ease, tOut .3s ease 2.7s forwards;
-}
-.toast b { color: var(--text0); }
-@keyframes tIn  { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
-@keyframes tOut { to{opacity:0} }
-
-/* ── Responsive ────────────────────────────────────── */
-@media (max-width: 600px) {
-  :root { --sidebar: 0px; }
-  #sidebar { display: none; }
-}
+@media(max-width:600px){#sidebar{display:none;}}
 </style>
 </head>
 <body>
 
-<!-- Login -->
-<div id="login-overlay">
-  <div id="login-card">
-    <h1>IRC<span>net</span></h1>
-    <p>Connectez-vous au serveur avec un pseudo et rejoignez un canal.</p>
-    <div class="field">
-      <label>Pseudo</label>
-      <input id="inp-nick" type="text" placeholder="MonPseudo" maxlength="30" autocomplete="off" spellcheck="false"/>
-    </div>
-    <div class="field">
-      <label>Canal initial</label>
-      <input id="inp-chan" type="text" placeholder="#général" autocomplete="off" spellcheck="false"/>
-    </div>
-    <div id="login-err"></div>
-    <button id="btn-connect">Connexion →</button>
+<!-- LOGIN -->
+<div class="mo" id="mo-login">
+  <div class="mc">
+    <h2>IRC<em>net</em></h2>
+    <p class="msub">Connectez-vous et commencez à chatter.</p>
+    <div class="fld"><label>Pseudo</label><input id="i-nick" type="text" placeholder="MonPseudo" maxlength="30" autocomplete="off"/></div>
+    <div class="fld"><label>Canal initial</label><input id="i-chan" type="text" placeholder="#général" autocomplete="off"/></div>
+    <div class="errmsg" id="login-err"></div>
+    <div class="brow"><button class="bprimary" id="btn-connect">Connexion →</button></div>
   </div>
 </div>
 
-<!-- App -->
-<div id="titlebar">
-  <div class="traffic">
-    <div class="dot d-r"></div>
-    <div class="dot d-y"></div>
-    <div class="dot d-g"></div>
+<!-- STATUS PICKER -->
+<div class="mo" id="mo-status" style="display:none;">
+  <div class="mc">
+    <h2>Changer de <em>statut</em></h2>
+    <div class="stgrid" id="st-grid"></div>
+    <div class="fld"><label>Message personnalisé (optionnel)</label>
+      <input type="text" id="st-msg" placeholder="Ex: en réunion jusqu'à 15h…" maxlength="80"/></div>
+    <div class="brow">
+      <button class="bsec" id="st-cancel">Annuler</button>
+      <button class="bprimary" id="st-confirm">Appliquer</button>
+    </div>
   </div>
-  <div id="tb-title">IRCnet</div>
-  <div id="tb-status"><span id="status-dot"></span><span id="status-label">déconnecté</span></div>
+</div>
+
+<!-- CREATE CHANNEL -->
+<div class="mo" id="mo-create" style="display:none;">
+  <div class="mc">
+    <h2>Créer un <em>canal</em></h2>
+    <div class="fld"><label>Nom du canal</label><input id="nc-name" type="text" placeholder="#mon-canal" autocomplete="off"/></div>
+    <div class="fld"><label>Topic initial</label><input id="nc-topic" type="text" placeholder="Description du canal…"/></div>
+    <div class="sec-section">
+      <div class="sec-title">Sécurité &amp; accès</div>
+      <div class="trow"><span class="tlabel">🔒 Protégé par mot de passe</span><label class="tgl"><input type="checkbox" id="nc-secured"/><span class="tgl-sl"></span></label></div>
+      <div id="nc-pass-wrap" style="display:none;">
+        <div class="fld"><label>Mot de passe</label><input id="nc-pass" type="password" placeholder="Choisissez un mot de passe"/></div>
+      </div>
+      <div class="trow"><span class="tlabel">👁 Privé (invitation uniquement)</span><label class="tgl"><input type="checkbox" id="nc-invite"/><span class="tgl-sl"></span></label></div>
+      <div class="frow">
+        <div class="fld"><label>Max utilisateurs (0=∞)</label><input id="nc-max" type="number" min="0" max="999" value="0"/></div>
+      </div>
+    </div>
+    <div class="errmsg" id="create-err"></div>
+    <div class="brow">
+      <button class="bsec" id="nc-cancel">Annuler</button>
+      <button class="bprimary" id="nc-confirm">Créer le canal</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN CHANNEL -->
+<div class="mo" id="mo-join" style="display:none;">
+  <div class="mc">
+    <h2>Rejoindre un <em>canal</em></h2>
+    <div class="fld"><label>Nom du canal</label><input id="jc-name" type="text" placeholder="#général" autocomplete="off"/></div>
+    <div class="fld"><label>Mot de passe (si sécurisé)</label><input id="jc-pass" type="password" placeholder="Laisser vide si ouvert"/></div>
+    <div id="chan-browser"></div>
+    <div class="brow">
+      <button class="bsec" id="jc-cancel">Annuler</button>
+      <button class="bprimary" id="jc-confirm">Rejoindre</button>
+    </div>
+  </div>
+</div>
+
+<!-- RANK MODAL -->
+<div class="mo" id="mo-rank" style="display:none;">
+  <div class="mc">
+    <h2>Changer le <em>rang</em></h2>
+    <p class="msub" id="rank-sub"></p>
+    <div class="rklist" id="rank-list"></div>
+    <div class="brow">
+      <button class="bsec" id="rank-cancel">Annuler</button>
+      <button class="bprimary" id="rank-confirm">Appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE MODAL -->
+<div class="mo" id="mo-invite" style="display:none;">
+  <div class="mc">
+    <h2>Inviter sur <em id="inv-ch-lbl"></em></h2>
+    <div class="inv-pick" id="inv-list"></div>
+    <div class="brow">
+      <button class="bsec" id="inv-cancel">Annuler</button>
+      <button class="bprimary" id="inv-confirm">Inviter</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx" style="display:none;"></div>
+
+<!-- APP -->
+<div id="titlebar">
+  <div class="traffic"><div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div></div>
+  <div id="tb-logo">IRC<em>net</em></div>
+  <div id="tb-right">
+    <span id="onlineCnt"></span>
+    <div id="conn-indicator"><span id="conn-dot"></span><span id="conn-label">déconnecté</span></div>
+  </div>
 </div>
 
 <div id="workspace">
   <div id="sidebar">
-    <div id="srv-header">
-      <div id="srv-name">irc.localnet</div>
-      <div id="srv-meta">port 3000 · ws</div>
+    <div id="my-profile">
+      <div id="my-av"><span id="my-av-l">?</span><div id="my-ring"></div></div>
+      <div id="my-info">
+        <div id="my-nick">—</div>
+        <div id="my-rank">Utilisateur</div>
+      </div>
+      <button id="my-status-btn" title="Changer statut">🟢</button>
     </div>
-    <div class="sb-label">Canaux</div>
+    <div class="sblabel">Canaux
+      <div style="display:flex;gap:4px;">
+        <button class="sbact" id="btn-create" title="Créer un canal">＋</button>
+        <button class="sbact" id="btn-join" title="Rejoindre un canal">⌕</button>
+      </div>
+    </div>
     <div id="chan-list"></div>
-    <button id="btn-join">＋ rejoindre un canal</button>
     <div id="user-section">
-      <div class="sb-label">Utilisateurs</div>
+      <div class="sblabel">Utilisateurs <span id="ucnt"></span></div>
       <div id="user-list"></div>
-    </div>
-    <div id="nick-box">
-      <span id="my-nick">—</span>
-      <button id="btn-nick">nick</button>
     </div>
   </div>
 
   <div id="main">
     <div id="chan-header">
-      <span id="hdr-name">—</span>
-      <span id="hdr-sep">—</span>
-      <span id="hdr-topic"></span>
-      <span id="hdr-count"></span>
+      <span id="hdr-name" style="color:var(--t2);">—</span>
+      <div id="hdr-badges"></div>
+      <span id="hdr-sep" style="color:var(--t2);">—</span>
+      <span id="hdr-topic" title="Cliquer pour modifier le topic"></span>
+      <div id="hdr-acts"></div>
+      <span id="hdr-cnt"></span>
     </div>
-    <div id="msg-box">
-      <div id="empty-state">
-        <div class="big">◈</div>
-        <div>Connectez-vous pour commencer</div>
-      </div>
-    </div>
+    <div id="msg-box"><div id="empty-state"><div style="font-size:32px;margin-bottom:8px;">◈</div><div>Connectez-vous pour commencer</div></div></div>
     <div id="input-bar">
-      <span id="input-prefix">—&gt;</span>
-      <input id="msg-input" placeholder="Message…" disabled autocomplete="off" spellcheck="false"/>
-      <button id="btn-send" disabled>Envoyer</button>
+      <span id="input-pfx">—&gt;</span>
+      <input id="msg-input" placeholder="Message ou /help pour les commandes…" disabled autocomplete="off" spellcheck="false"/>
+      <button id="btn-send" disabled>↵</button>
     </div>
   </div>
 </div>
-
 <div id="toasts"></div>
 
 <script>
 'use strict';
+const RORDER=['owner','admin','op','halfop','voice','user'];
+const RLABELS={owner:'Fondateur',admin:'Admin',op:'Opérateur',halfop:'Demi-op',voice:'Voix',user:'Utilisateur'};
+const RPFX={owner:'~',admin:'&',op:'@',halfop:'%',voice:'+',user:''};
+const RDESC={owner:'Contrôle total du canal',admin:'Gestion complète',op:'Modération et sanctions',halfop:'Modération de base',voice:'Parler en mode +m',user:'Membre standard'};
+const RC={owner:'#f05454',admin:'#9b7ff4',op:'#4f87ff',halfop:'#f0a726',voice:'#27c98a',user:''};
+const RBG={owner:'rgba(240,84,84,.15)',admin:'rgba(155,127,244,.15)',op:'rgba(79,135,255,.15)',halfop:'rgba(240,167,38,.15)',voice:'rgba(39,201,138,.15)',user:''};
+const NP=['#4f87ff','#9b7ff4','#27c98a','#f0a726','#f05454','#29c4d8','#fb7185','#4ade80','#e879f9'];
+const STATUSES_DEFAULT={online:{label:'En ligne',emoji:'🟢',color:'#27c98a'},away:{label:'Absent',emoji:'🟡',color:'#f0a726'},busy:{label:'Occupé',emoji:'🔴',color:'#f05454'},wc:{label:'Aux toilettes',emoji:'🚽',color:'#f0a726'},eating:{label:'En train de manger',emoji:'🍽️',color:'#f0a726'},gaming:{label:'En jeu',emoji:'🎮',color:'#9b7ff4'},sleep:{label:'Dort',emoji:'💤',color:'#4a5978'},coding:{label:'Code en cours',emoji:'💻',color:'#29c4d8'},brb:{label:'Revient vite',emoji:'⏱️',color:'#f0a726'},custom:{label:'Personnalisé',emoji:'✏️',color:'#e8edf8'}};
+const STORDER=['online','brb','eating','wc','gaming','coding','busy','away','sleep','custom'];
 
-// ── State ──────────────────────────────────────
-let ws        = null;
-let myNick    = '';
-let currentChan = '';
-const joined  = new Map();   // chanName → {topic, users:Set}
-const unread  = new Map();   // chanName → count
-const msgLog  = new Map();   // chanName → [{nick,text,type,time}]
-const userColors = {};
+let ws=null,myNick='',myGrank='user',mySt='online';
+let curChan='';
+const joined=new Map();   // ch→{topic,users:Map,secured,inviteOnly}
+const unread=new Map();
+const msgLog=new Map();
+const mst=new Map();      // nick→{status,statusMsg,statusSince}
+const UC={};
+let stList=STATUSES_DEFAULT;
+let selSt=null,selRank=null,rkTarget=null,rkChan=null,invSel=null;
 
-const NICK_PALETTE = [
-  '#4e8cff','#9b7ff4','#2ec79a','#f0a726','#f06060',
-  '#38bdf8','#fb7185','#4ade80','#e879f9','#22d3ee'
-];
-function nickColor(n) {
-  if (!userColors[n]) {
-    let h = 0; for (const c of n) h = (h*31 + c.charCodeAt(0)) % NICK_PALETTE.length;
-    userColors[n] = NICK_PALETTE[h];
-  }
-  return userColors[n];
-}
-
-function ts() {
-  const d = new Date();
-  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-}
-
-function escHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/https?:\/\/\S+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
-}
+function nc(n){if(!UC[n]){let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%NP.length;UC[n]=NP[h];}return UC[n];}
+function ts(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
+function esc(t=''){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/https?:\/\/\S+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);}
+function rnum(r){return RORDER.length-RORDER.indexOf(r||'user')-1;}
+function myRankIn(ch){return joined.get(ch)?.users?.get(myNick)||'user';}
 
 // ── WebSocket ──────────────────────────────────
-function connect(nick, chan) {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url   = `${proto}//${location.host}/ws`;
-  ws = new WebSocket(url);
-
-  ws.onopen = () => {
-    setStatus(true);
+function connect(nick,chan){
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen=()=>{
+    setConn(true);
     sendRaw(`NICK ${nick}`);
     sendRaw(`USER ${nick} 0 * :${nick}`);
-    if (chan) {
-      setTimeout(() => sendRaw(`JOIN ${chan}`), 500);
-    }
+    if(chan)setTimeout(()=>sendRaw(`JOIN ${chan.startsWith('#')?chan:'#'+chan}`),600);
   };
-
-  ws.onmessage = e => {
-    try { handleMsg(JSON.parse(e.data)); } catch {}
-  };
-
-  ws.onclose = () => {
-    setStatus(false);
-    showToast('Connexion perdue — rechargez la page');
-  };
-
-  ws.onerror = () => setStatus(false);
+  ws.onmessage=e=>{try{handle(JSON.parse(e.data));}catch{}};
+  ws.onclose=()=>{setConn(false);toast('Connexion perdue','err');};
+  ws.onerror=()=>setConn(false);
+}
+function sendRaw(l){if(ws&&ws.readyState===1)ws.send(JSON.stringify({raw:l}));}
+function setConn(on){
+  document.getElementById('conn-dot').className=on?'on':'';
+  document.getElementById('conn-label').textContent=on?'connecté':'déconnecté';
 }
 
-function sendRaw(line) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ raw: line }));
+// ── Handle ─────────────────────────────────────
+function handle(obj){
+  if(obj.type==='status_update'){handleStUpd(obj);return;}
+  if(obj.type==='member_statuses'){Object.entries(obj.members).forEach(([n,d])=>mst.set(n,d));renderUsers();return;}
+  if(obj.type==='user_joined'){handleUJoin(obj);return;}
+  if(obj.type==='user_left'){if(joined.has(obj.channel)){joined.get(obj.channel).users.delete(obj.nick);if(obj.channel===curChan)renderUsers();}return;}
+  if(obj.type==='user_kicked'){handleKicked(obj);return;}
+  if(obj.type==='rank_change'){handleRkChg(obj);return;}
+  if(obj.type==='your_rank'){toast(`Votre rang dans ${obj.channel} : <b>${obj.rankLabel}</b>`);return;}
+  if(obj.type==='chan_info'){if(joined.has(obj.channel)){const c=joined.get(obj.channel);c.secured=obj.secured;c.inviteOnly=obj.inviteOnly;}renderChanList();return;}
+  if(obj.type==='topic_change'){if(joined.has(obj.channel))joined.get(obj.channel).topic=obj.topic;if(obj.channel===curChan)renderHeader();pushEvt(obj.channel,'sys',`${obj.actor} a changé le topic : ${obj.topic}`);return;}
+  if(obj.type==='statuses_list'){stList=obj.statuses;buildStGrid();return;}
+  if(obj.type==='invite'){toast(`<b>${obj.from}</b> vous invite sur <b>${obj.channel}</b> — /join ${obj.channel}`,'warn');return;}
+  if(obj.type==='forced_move'){toast(`<b>${obj.actor}</b> vous déplace vers ${obj.to}`,'warn');return;}
+  if(obj.type==='user_muted'){pushEvt(obj.channel,'sys',`🔇 ${obj.target} rendu muet par ${obj.actor}${obj.duration?` (${obj.duration}s)`:''}`);return;}
+  if(obj.type==='user_unmuted'){pushEvt(obj.channel,'sys',`🔊 ${obj.target} peut à nouveau parler`);return;}
+  if(obj.type==='user_banned'){pushEvt(curChan,'sys',`🔨 ${obj.target} banni : ${obj.reason}`);return;}
+  if(obj.type==='rank_update'){myGrank=obj.rank;renderMe();return;}
+  if(obj.type==='nick_change'){if(joined.has(obj.channel)){const c=joined.get(obj.channel);const r=c.users.get(obj.old)||'user';c.users.delete(obj.old);c.users.set(obj.neo,r);}if(obj.channel===curChan)renderUsers();return;}
+  if(obj.type==='mode_change'){if(obj.channel===curChan)renderHeader();return;}
+  if(obj.type==='pong'||obj.type==='error')return;
+
+  const raw=obj.raw||'';
+  const m=raw.match(/^(?::(\S+) )?(\S+)((?:\s+[^:]\S*)*)?(?:\s+:(.*))?$/);
+  if(!m)return;
+  const pfx=m[1]||'',cmd=m[2];
+  const mid=(m[3]||'').trim().split(/\s+/).filter(Boolean);
+  const trail=m[4];
+  const p=trail!==undefined?[...mid,trail]:mid;
+  const nick=pfx.split('!')[0];
+
+  switch(cmd){
+    case '001':
+      myNick=p[0]||myNick;
+      document.getElementById('mo-login').style.display='none';
+      document.getElementById('msg-input').disabled=false;
+      document.getElementById('btn-send').disabled=false;
+      renderMe();
+      setInterval(updateOnlineCnt,15000);
+      break;
+    case '332':if(joined.has(p[1])){joined.get(p[1]).topic=p[2]||'';}if(p[1]===curChan)renderHeader();break;
+    case '353':{
+      const ch=p[2],names=(p[3]||'').split(' ').filter(Boolean);
+      if(!joined.has(ch))joined.set(ch,{topic:'',users:new Map(),secured:false,inviteOnly:false});
+      for(const n of names){const r=n[0]==='~'?'owner':n[0]==='&'?'admin':n[0]==='@'?'op':n[0]==='%'?'halfop':n[0]==='+'?'voice':'user';joined.get(ch).users.set(n.replace(/^[~&@%+]/,''),r);}
+      if(ch===curChan){renderUsers();renderHeader();}break;
+    }
+    case 'JOIN':{
+      const ch=p[0]||trail;
+      if(nick===myNick){if(!joined.has(ch))joined.set(ch,{topic:'',users:new Map(),secured:false,inviteOnly:false});if(!msgLog.has(ch))msgLog.set(ch,[]);joined.get(ch).users.set(myNick,'user');switchChan(ch);renderChanList();}
+      break;
+    }
+    case 'PART':{
+      const ch=p[0],rsn=p[1]||'';
+      if(nick===myNick){joined.delete(ch);msgLog.delete(ch);unread.delete(ch);if(curChan===ch){curChan='';clearMsgs();}renderChanList();}
+      else{if(joined.has(ch))joined.get(ch).users.delete(nick);if(ch===curChan)renderUsers();pushEvt(ch,'part',`${nick} a quitté${rsn?' ('+rsn+')':''}`);}
+      break;
+    }
+    case 'QUIT':{
+      const rsn=p[0]||'';
+      for(const [ch,info] of joined){if(info.users.has(nick)){info.users.delete(nick);pushEvt(ch,'part',`${nick} a quitté le serveur${rsn?' ('+rsn+')':''}`);if(ch===curChan)renderUsers();}}
+      mst.delete(nick);break;
+    }
+    case 'NICK':{
+      const neo=p[0];
+      if(nick===myNick){myNick=neo;renderMe();}
+      for(const [ch,info] of joined){if(info.users.has(nick)){const r=info.users.get(nick);info.users.delete(nick);info.users.set(neo,r);pushEvt(ch,'sys',`${nick} → ${neo}`);if(ch===curChan)renderUsers();}}
+      break;
+    }
+    case 'PRIVMSG':{
+      const tgt=p[0],txt=p[1]||'';
+      const isAct=txt.startsWith('\x01ACTION ');
+      const clean=isAct?txt.slice(8,-1):txt;
+      const isPM=tgt===myNick;
+      const ch=isPM?nick:tgt;
+      if(isPM&&!joined.has(ch)){joined.set(ch,{topic:`PM avec ${nick}`,users:new Map([[myNick,'user'],[nick,'user']]),secured:false,inviteOnly:false});msgLog.set(ch,[]);renderChanList();}
+      pushMsg(ch,{nick,text:clean,type:isAct?'action':'normal',time:ts()});
+      if(clean.toLowerCase().includes(myNick.toLowerCase())&&nick!==myNick)toast(`<b>${nick}</b> vous a mentionné dans ${ch}`);
+      else if(ch!==curChan)toast(`<b>${nick}</b>: ${clean.slice(0,50)}${clean.length>50?'…':''}`);
+      break;
+    }
+    case 'TOPIC':if(joined.has(p[0]))joined.get(p[0]).topic=p[1]||'';if(p[0]===curChan)renderHeader();break;
+    case 'KICK':{
+      const ch=p[0],tgt=p[1],rsn=p[2]||'Expulsé';
+      if(joined.has(ch))joined.get(ch).users.delete(tgt);
+      if(tgt===myNick){joined.delete(ch);msgLog.delete(ch);if(curChan===ch){curChan='';clearMsgs();}renderChanList();toast(`Expulsé de ${ch} par ${nick}${rsn?' : '+rsn:''}`, 'err');}
+      else{pushEvt(ch,'kick',`${tgt} expulsé par ${nick}${rsn?' ('+rsn+')':''}`);if(ch===curChan)renderUsers();}
+      break;
+    }
+    case 'MODE':{
+      const ch=p[0];if(joined.has(ch)){const ms=p[1]||'';if(ms.includes('k'))joined.get(ch).secured=ms[0]==='+';if(ms.includes('i'))joined.get(ch).inviteOnly=ms[0]==='+';}
+      renderChanList();if(p[0]===curChan)renderHeader();break;
+    }
+    case 'NOTICE':pushEvt(curChan||'','sys',p[1]||p[0]||'');break;
+    case 'INVITE':toast(`<b>${nick}</b> vous invite sur <b>${p[1]}</b>`,'warn');break;
+    case '341':toast(`Invitation envoyée à ${p[1]} pour ${p[2]}`);break;
+    case '381':toast('Vous êtes maintenant IRC Operator !');break;
+    case '433':showErr('login-err',`Le pseudo "${p[1]}" est déjà utilisé.`);document.getElementById('mo-login').style.display='flex';break;
+    case '471':toast(`Canal plein : ${p[1]}`,'warn');break;
+    case '473':toast(`Canal sur invitation : ${p[1]}`,'warn');break;
+    case '474':toast(`Banni de ${p[1]}`,'err');break;
+    case '475':toast(`Mauvais mot de passe pour ${p[1]}`,'err');break;
+    case '482':toast('Droits insuffisants','warn');break;
+    case 'PING':sendRaw(`PONG :${p[0]||'pong'}`);break;
+    default:break;
   }
 }
 
-// ── IRC message handling ───────────────────────
-function handleMsg(obj) {
-  const raw = obj.raw || '';
-  const parts = raw.match(/^(?::(\S+) )?(\S+)((?:\s+[^:]\S*)*)?(?:\s+:(.*))?$/);
-  if (!parts) return;
-
-  const prefix   = parts[1] || '';
-  const cmd      = parts[2];
-  const middle   = (parts[3] || '').trim().split(/\s+/).filter(Boolean);
-  const trailing = parts[4];
-  const params   = trailing !== undefined ? [...middle, trailing] : middle;
-  const nick     = prefix.split('!')[0];
-
-  switch (cmd) {
-    case '001': // welcome
-      myNick = params[0] || myNick;
-      document.getElementById('my-nick').textContent = myNick;
-      document.getElementById('input-prefix').textContent = myNick + '>';
-      document.getElementById('msg-input').disabled = false;
-      document.getElementById('btn-send').disabled = false;
-      document.getElementById('login-overlay').style.display = 'none';
-      document.getElementById('srv-name').textContent = prefix || 'irc.localnet';
-      break;
-
-    case '332': // topic reply
-      if (joined.has(params[1])) {
-        joined.get(params[1]).topic = params[2] || '';
-        if (params[1] === currentChan) renderHeader();
-      }
-      break;
-
-    case '331': break; // no topic
-
-    case '353': { // NAMES
-      const ch = params[2];
-      if (!joined.has(ch)) joined.set(ch, { topic: '', users: new Set() });
-      const names = (params[3] || '').split(' ').filter(Boolean);
-      for (const n of names) joined.get(ch).users.add(n.replace(/^[@+]/, ''));
-      if (ch === currentChan) renderUsers();
-      break;
-    }
-
-    case '366': break; // end of names
-
-    case 'JOIN': {
-      const ch = params[0] || trailing;
-      if (nick === myNick) {
-        if (!joined.has(ch)) joined.set(ch, { topic: '', users: new Set() });
-        if (!msgLog.has(ch)) msgLog.set(ch, []);
-        joined.get(ch).users.add(myNick);
-        switchChan(ch);
-        renderChanList();
-      } else {
-        if (joined.has(ch)) {
-          joined.get(ch).users.add(nick);
-          if (ch === currentChan) renderUsers();
-        }
-        pushLog(ch, { nick: 'srv', text: `${nick} a rejoint ${ch}`, type: 'system', time: ts() });
-      }
-      break;
-    }
-
-    case 'PART': {
-      const ch = params[0];
-      const reason = params[1] || '';
-      if (nick === myNick) {
-        joined.delete(ch);
-        msgLog.delete(ch);
-        unread.delete(ch);
-        if (currentChan === ch) {
-          currentChan = '';
-          renderHeader();
-          clearMessages();
-        }
-        renderChanList();
-      } else {
-        if (joined.has(ch)) {
-          joined.get(ch).users.delete(nick);
-          if (ch === currentChan) renderUsers();
-        }
-        pushLog(ch, { nick: 'srv', text: `${nick} a quitté ${ch}${reason ? ' ('+reason+')' : ''}`, type: 'system', time: ts() });
-      }
-      break;
-    }
-
-    case 'QUIT': {
-      const reason = params[0] || '';
-      for (const [ch, info] of joined) {
-        if (info.users.has(nick)) {
-          info.users.delete(nick);
-          pushLog(ch, { nick: 'srv', text: `${nick} a quitté le serveur${reason ? ' ('+reason+')' : ''}`, type: 'system', time: ts() });
-          if (ch === currentChan) renderUsers();
-        }
-      }
-      break;
-    }
-
-    case 'NICK': {
-      const newNick = params[0];
-      if (nick === myNick) {
-        myNick = newNick;
-        document.getElementById('my-nick').textContent = myNick;
-        document.getElementById('input-prefix').textContent = myNick + '>';
-      }
-      for (const [ch, info] of joined) {
-        if (info.users.has(nick)) {
-          info.users.delete(nick);
-          info.users.add(newNick);
-          pushLog(ch, { nick: 'srv', text: `${nick} est maintenant ${newNick}`, type: 'system', time: ts() });
-          if (ch === currentChan) renderUsers();
-        }
-      }
-      break;
-    }
-
-    case 'PRIVMSG': {
-      const target = params[0];
-      const text   = params[1] || '';
-      const isMe   = target === myNick;
-      const ch     = isMe ? nick : target;
-      const isAction = text.startsWith('\x01ACTION ');
-      const cleanText = isAction ? text.slice(8, -1) : text;
-      const type   = isAction ? 'action' : 'normal';
-
-      if (isMe && !joined.has(ch)) {
-        joined.set(ch, { topic: `PM avec ${nick}`, users: new Set([myNick, nick]) });
-        msgLog.set(ch, []);
-        renderChanList();
-      }
-
-      pushLog(ch, { nick, text: cleanText, type, time: ts() });
-
-      if (cleanText.toLowerCase().includes(myNick.toLowerCase()) && nick !== myNick) {
-        showToast(`<b>${nick}</b> vous a mentionné dans ${ch}`);
-      } else if (ch !== currentChan) {
-        showToast(`<b>${nick}</b> dans ${ch}: ${cleanText.slice(0,45)}${cleanText.length>45?'…':''}`);
-      }
-      break;
-    }
-
-    case 'TOPIC': {
-      const ch = params[0];
-      const topic = params[1] || '';
-      if (joined.has(ch)) joined.get(ch).topic = topic;
-      pushLog(ch, { nick: 'srv', text: `${nick} a changé le topic : ${topic}`, type: 'system', time: ts() });
-      if (ch === currentChan) renderHeader();
-      break;
-    }
-
-    case 'KICK': {
-      const ch     = params[0];
-      const target = params[1];
-      const reason = params[2] || '';
-      if (joined.has(ch)) joined.get(ch).users.delete(target);
-      pushLog(ch, { nick: 'srv', text: `${target} a été expulsé par ${nick}${reason ? ' ('+reason+')' : ''}`, type: 'system', time: ts() });
-      if (target === myNick) {
-        joined.delete(ch); msgLog.delete(ch);
-        if (currentChan === ch) { currentChan = ''; clearMessages(); }
-        renderChanList();
-        showToast(`Vous avez été expulsé de ${ch}`);
-      } else if (ch === currentChan) renderUsers();
-      break;
-    }
-
-    case 'MODE': {
-      const ch  = params[0];
-      const m   = params[1] || '';
-      const tgt = params[2] || '';
-      pushLog(ch, { nick: 'srv', text: `Mode ${m}${tgt?' '+tgt:''} défini par ${nick}`, type: 'system', time: ts() });
-      break;
-    }
-
-    case 'NOTICE': {
-      const text = params[1] || params[0] || '';
-      pushLog(currentChan || '__srv__', { nick: 'srv', text, type: 'system', time: ts() });
-      break;
-    }
-
-    case 'PONG': break;
-    case 'PING':
-      sendRaw(`PONG :${params[0] || 'pong'}`);
-      break;
-
-    case '305': case '306': break; // away ACK
-    case '372': case '375': case '376': break; // MOTD
-
-    case '401': showToast(`Pseudo introuvable : ${params[1]}`); break;
-    case '421': showToast(`Commande inconnue : ${params[1]}`); break;
-    case '433': {
-      const badNick = params[1];
-      showToast(`Pseudo ${badNick} déjà utilisé`);
-      document.getElementById('login-err').textContent = `Le pseudo "${badNick}" est déjà pris.`;
-      document.getElementById('login-err').style.display = 'block';
-      document.getElementById('login-overlay').style.display = 'flex';
-      break;
-    }
-    case '482': showToast('Vous n\'êtes pas opérateur de ce canal'); break;
-
-    default: break;
-  }
+function handleStUpd(obj){
+  mst.set(obj.nick,{status:obj.status,statusMsg:obj.statusMsg,statusSince:obj.statusSince});
+  if(obj.nick===myNick){mySt=obj.status;renderMe();}
+  if(curChan&&joined.get(curChan)?.users?.has(obj.nick))renderUsers();
+  const si=stList[obj.status]||{emoji:'🟢',label:'En ligne'};
+  if(obj.nick!==myNick)toast(`<b>${obj.nick}</b> → ${si.emoji} ${si.label}${obj.statusMsg?' ('+obj.statusMsg+')':''}`);
+}
+function handleUJoin(obj){
+  if(!joined.has(obj.channel))return;
+  joined.get(obj.channel).users.set(obj.nick,obj.rank||'user');
+  mst.set(obj.nick,{status:obj.status||'online',statusMsg:obj.statusMsg||'',statusSince:Date.now()});
+  if(obj.channel===curChan){renderUsers();renderHeader();}
+  pushEvt(obj.channel,'join',`${obj.nick} a rejoint ${obj.channel}`);
+}
+function handleKicked(obj){
+  if(!joined.has(obj.channel))return;
+  joined.get(obj.channel).users.delete(obj.target);
+  pushEvt(obj.channel,'kick',`${obj.target} expulsé par ${obj.actor}${obj.reason?' ('+obj.reason+')':''}`);
+  if(obj.channel===curChan)renderUsers();
+}
+function handleRkChg(obj){
+  if(!joined.has(obj.channel))return;
+  joined.get(obj.channel).users.set(obj.target,obj.rank);
+  if(obj.channel===curChan)renderUsers();
+  pushEvt(obj.channel,'rank',`${obj.actor} → ${obj.target} : ${obj.rankLabel}`);
 }
 
-// ── Log & render messages ──────────────────────
-function pushLog(ch, entry) {
-  if (!ch) return;
-  if (!msgLog.has(ch)) msgLog.set(ch, []);
-  msgLog.get(ch).push(entry);
-
-  if (ch === currentChan) {
-    appendMsg(entry);
-    scrollBottom();
-  } else if (entry.type !== 'system') {
-    unread.set(ch, (unread.get(ch) || 0) + 1);
-    renderChanList();
-  }
+// ── Render ─────────────────────────────────────
+function renderMe(){
+  const l=myNick?myNick[0].toUpperCase():'?';
+  document.getElementById('my-av-l').textContent=l;
+  document.getElementById('my-av').style.background=nc(myNick||'?');
+  document.getElementById('my-nick').textContent=myNick||'—';
+  document.getElementById('my-rank').textContent=RLABELS[myGrank]||'Utilisateur';
+  document.getElementById('input-pfx').textContent=(myNick||'—')+'>';
+  const si=stList[mySt]||{emoji:'🟢',color:'#27c98a'};
+  document.getElementById('my-status-btn').textContent=si.emoji||'🟢';
+  document.getElementById('my-ring').style.borderColor=si.color||'#27c98a';
 }
 
-function appendMsg(entry) {
-  const box = document.getElementById('msg-box');
-
-  // Remove empty state
-  const es = document.getElementById('empty-state');
-  if (es) es.remove();
-
-  if (entry.type === 'system') {
-    const d = document.createElement('div');
-    d.className = 'msg-system';
-    d.textContent = entry.text;
-    box.appendChild(d);
-    return;
-  }
-
-  if (entry.type === 'action') {
-    const d = document.createElement('div');
-    d.className = 'msg-system msg-action';
-    d.textContent = `* ${entry.nick} ${entry.text}`;
-    box.appendChild(d);
-    return;
-  }
-
-  // Check if we can append to last group
-  const groups = box.querySelectorAll('.msg-group');
-  const last = groups[groups.length - 1];
-  const isMe = entry.nick === myNick;
-  const hl   = !isMe && entry.text.toLowerCase().includes(myNick.toLowerCase());
-
-  if (last && last.dataset.nick === entry.nick) {
-    last.appendChild(makeRow(entry, hl));
-    return;
-  }
-
-  const group = document.createElement('div');
-  group.className = 'msg-group' + (isMe ? ' msg-me' : '');
-  group.dataset.nick = entry.nick;
-
-  const hdr = document.createElement('div');
-  hdr.className = 'mg-header';
-  hdr.innerHTML = `<span class="mg-nick" style="color:${nickColor(entry.nick)}" data-nick="${entry.nick}">${entry.nick}</span><span class="mg-time">${entry.time}</span>`;
-  hdr.querySelector('.mg-nick').addEventListener('click', () => {
-    document.getElementById('msg-input').value = entry.nick + ': ';
-    document.getElementById('msg-input').focus();
-  });
-  group.appendChild(hdr);
-  group.appendChild(makeRow(entry, hl));
-  box.appendChild(group);
-}
-
-function makeRow(entry, hl) {
-  const row = document.createElement('div');
-  row.className = 'msg-row' + (hl ? ' msg-hl' : '');
-  row.innerHTML = `<span class="msg-ts">${entry.time}</span><span class="msg-text">${escHtml(entry.text)}</span>`;
-  return row;
-}
-
-function clearMessages() {
-  const box = document.getElementById('msg-box');
-  box.innerHTML = '<div id="empty-state"><div class="big">◈</div><div>Rejoignez un canal</div></div>';
-}
-
-function renderMessages() {
-  const box = document.getElementById('msg-box');
-  box.innerHTML = '';
-
-  const entries = msgLog.get(currentChan) || [];
-  if (!entries.length) {
-    box.innerHTML = '<div id="empty-state"><div class="big">◈</div><div>Aucun message — dites bonjour !</div></div>';
-    return;
-  }
-
-  const sep = document.createElement('div');
-  sep.className = 'day-sep';
-  sep.textContent = "Aujourd'hui";
-  box.appendChild(sep);
-
-  let lastNick = null;
-  for (const e of entries) {
-    if (e.type !== 'normal' && e.type !== 'action') {
-      const d = document.createElement('div');
-      d.className = e.type === 'action' ? 'msg-system msg-action' : 'msg-system';
-      d.textContent = e.type === 'action' ? `* ${e.nick} ${e.text}` : e.text;
-      box.appendChild(d);
-      lastNick = null;
-      continue;
-    }
-    const isMe = e.nick === myNick;
-    const hl   = !isMe && e.text.toLowerCase().includes(myNick.toLowerCase());
-    if (e.nick === lastNick) {
-      const groups = box.querySelectorAll('.msg-group');
-      groups[groups.length - 1].appendChild(makeRow(e, hl));
-    } else {
-      const group = document.createElement('div');
-      group.className = 'msg-group' + (isMe ? ' msg-me' : '');
-      group.dataset.nick = e.nick;
-      const hdr = document.createElement('div');
-      hdr.className = 'mg-header';
-      hdr.innerHTML = `<span class="mg-nick" style="color:${nickColor(e.nick)}">${e.nick}</span><span class="mg-time">${e.time}</span>`;
-      group.appendChild(hdr);
-      group.appendChild(makeRow(e, hl));
-      box.appendChild(group);
-    }
-    lastNick = e.nick;
-  }
-  scrollBottom();
-}
-
-function scrollBottom() {
-  const box = document.getElementById('msg-box');
-  box.scrollTop = box.scrollHeight;
-}
-
-// ── Channel switching ──────────────────────────
-function switchChan(ch) {
-  currentChan = ch;
-  unread.delete(ch);
-  renderChanList();
-  renderHeader();
-  renderUsers();
-  renderMessages();
-}
-
-function renderHeader() {
-  const info = joined.get(currentChan);
-  document.getElementById('hdr-name').textContent = currentChan || '—';
-  document.getElementById('hdr-topic').textContent = info?.topic || '';
-  document.getElementById('hdr-count').textContent = info ? info.users.size + ' utilisateurs' : '';
-}
-
-function renderChanList() {
-  const el = document.getElementById('chan-list');
-  el.innerHTML = '';
-  for (const ch of joined.keys()) {
-    const u = unread.get(ch) || 0;
-    const row = document.createElement('div');
-    row.className = 'chan-row' + (ch === currentChan ? ' active' : '') + (u ? ' unread' : '');
-    row.innerHTML = `<span>${ch}</span><span class="chan-badge">${u || ''}</span>`;
-    row.addEventListener('click', () => switchChan(ch));
+function renderChanList(){
+  const el=document.getElementById('chan-list');el.innerHTML='';
+  for(const [ch,info] of joined){
+    const u=unread.get(ch)||0;
+    const row=document.createElement('div');
+    row.className='chan-row'+(ch===curChan?' active':'')+(u?' unread':'');
+    const icons=(info.secured?'🔒 ':'')+( info.inviteOnly?'👁 ':'');
+    row.innerHTML=`<span class="chan-name">${icons}${ch}</span><span class="chan-badge">${u||''}</span>`;
+    row.addEventListener('click',()=>switchChan(ch));
     el.appendChild(row);
   }
 }
 
-function renderUsers() {
-  const el   = document.getElementById('user-list');
-  const info = joined.get(currentChan);
-  el.innerHTML = '';
-  if (!info) return;
-  for (const nick of info.users) {
-    const isOp = nick.startsWith('@');
-    const cleanNick = nick.replace(/^[@+]/, '');
-    const row = document.createElement('div');
-    row.className = 'user-row';
-    row.innerHTML = `<span class="u-dot ${isOp ? 'u-op' : 'u-on'}"></span><span style="color:${nickColor(cleanNick)};font-size:11px">${nick}</span>`;
+function renderUsers(){
+  const el=document.getElementById('user-list');
+  const info=joined.get(curChan);
+  el.innerHTML='';
+  if(!info){document.getElementById('ucnt').textContent='';return;}
+  const sorted=[...info.users.entries()].sort((a,b)=>rnum(b[1])-rnum(a[1]));
+  let lastRk='__none__';
+  for(const [nick,rank] of sorted){
+    if(rank!==lastRk){
+      const gl=document.createElement('div');gl.className='ugrp-label';
+      gl.textContent=RLABELS[rank]||'Utilisateurs';el.appendChild(gl);lastRk=rank;
+    }
+    const ms=mst.get(nick)||{status:'online',statusMsg:''};
+    const si=stList[ms.status]||{emoji:'🟢',label:'En ligne',color:'#27c98a'};
+    const dotCls=ms.status==='online'?'':ms.status==='away'||ms.status==='brb'?'away':ms.status==='busy'?'busy':ms.status==='sleep'?'sleep':ms.status==='gaming'?'gaming':ms.status==='coding'?'coding':'away';
+    const row=document.createElement('div');row.className='user-row';
+    const rbg=RBG[rank]||'';const rc2=RC[rank]||'';
+    const rbadge=rank!=='user'?`<span class="u-rbadge" style="background:${rbg};color:${rc2};">${RPFX[rank]||''}</span>`:'';
+    row.innerHTML=`
+      <div class="u-av" style="background:${nc(nick)};color:#fff;">
+        ${nick[0]?nick[0].toUpperCase():'?'}
+        <div class="u-dot ${dotCls}"></div>
+      </div>
+      <div class="u-info">
+        <div class="u-name" style="color:${nc(nick)}">${nick}</div>
+        <div class="u-stlabel">${si.emoji} ${ms.statusMsg||si.label}</div>
+      </div>
+      ${rbadge}`;
+    row.addEventListener('click',ev=>showCtx(ev,nick,curChan));
     el.appendChild(row);
   }
-  document.getElementById('hdr-count').textContent = info.users.size + ' utilisateurs';
+  document.getElementById('ucnt').textContent=info.users.size;
+  document.getElementById('hdr-cnt').textContent=info.users.size+' utilisateurs';
 }
 
-// ── Status ─────────────────────────────────────
-function setStatus(on) {
-  document.getElementById('status-dot').className = on ? 'on' : '';
-  document.getElementById('status-label').textContent = on ? 'connecté' : 'déconnecté';
+function renderHeader(){
+  const info=joined.get(curChan);
+  const el=document.getElementById('hdr-name');
+  el.textContent=curChan||'—';el.style.color=curChan?'var(--t0)':'var(--t2)';
+  document.getElementById('hdr-sep').textContent=curChan&&info?.topic?'—':'';
+  document.getElementById('hdr-topic').textContent=info?.topic||'';
+  const bdg=document.getElementById('hdr-badges');bdg.innerHTML='';
+  if(info?.secured)bdg.innerHTML+=`<span class="hbadge hb-sec">🔒 Sécurisé</span>`;
+  if(info?.inviteOnly)bdg.innerHTML+=`<span class="hbadge hb-inv">👁 Privé</span>`;
+  const acts=document.getElementById('hdr-acts');acts.innerHTML='';
+  if(curChan){
+    const mr=myRankIn(curChan);
+    if(rnum(mr)>=rnum('halfop')){const b=document.createElement('button');b.className='hbtn';b.textContent='Inviter';b.onclick=showInvModal;acts.appendChild(b);}
+    if(rnum(mr)>=rnum('op')){const b=document.createElement('button');b.className='hbtn';b.textContent='Gérer canal';b.onclick=manageChan;acts.appendChild(b);}
+    if(rnum(mr)>=rnum('op')){const b=document.createElement('button');b.className='hbtn';b.textContent='Paramètres';b.onclick=chanSettings;acts.appendChild(b);}
+  }
 }
 
-// ── Toast ──────────────────────────────────────
-function showToast(html) {
-  const c = document.getElementById('toasts');
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = html;
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 3100);
+function updateOnlineCnt(){
+  const s=new Set();for(const info of joined.values())for(const n of info.users.keys())s.add(n);
+  document.getElementById('onlineCnt').textContent=s.size?s.size+' en ligne':'';
 }
 
-// ── Input / commands ───────────────────────────
-function send() {
-  const input = document.getElementById('msg-input');
-  const raw   = input.value.trim();
-  if (!raw) return;
-  input.value = '';
+// ── Messages ────────────────────────────────────
+function pushMsg(ch,e){
+  if(!msgLog.has(ch))msgLog.set(ch,[]);
+  msgLog.get(ch).push(e);
+  if(ch===curChan){appendMsg(e);scrollBot();}
+  else{unread.set(ch,(unread.get(ch)||0)+1);renderChanList();}
+}
+function pushEvt(ch,type,text){
+  if(!ch)return;
+  if(!msgLog.has(ch))msgLog.set(ch,[]);
+  const e={type,text,time:ts()};
+  msgLog.get(ch).push(e);
+  if(ch===curChan){appendEvt(e);scrollBot();}
+}
 
-  if (raw.startsWith('/')) {
-    const parts = raw.slice(1).split(' ');
-    const cmd   = parts[0].toLowerCase();
+function appendMsg(e){
+  const box=document.getElementById('msg-box');
+  const es=document.getElementById('empty-state');if(es)es.remove();
+  if(e.type==='action'){const d=document.createElement('div');d.className='evtaction';d.textContent=`* ${e.nick} ${e.text}`;box.appendChild(d);return;}
+  const isMe=e.nick===myNick;const hl=!isMe&&e.text.toLowerCase().includes(myNick.toLowerCase());
+  const gs=box.querySelectorAll('.mgrp');const last=gs[gs.length-1];
+  if(last&&last.dataset.nick===e.nick){last.appendChild(mkRow(e,hl));return;}
+  box.appendChild(mkGroup(e,hl,isMe));
+}
+function appendEvt(e){
+  const box=document.getElementById('msg-box');
+  const es=document.getElementById('empty-state');if(es)es.remove();
+  const d=document.createElement('div');
+  d.className={sys:'evtsys',join:'evtjoin',part:'evtpart',kick:'evtkick',rank:'evtrank'}[e.type]||'evtsys';
+  d.textContent=e.text;box.appendChild(d);
+}
+function mkGroup(e,hl,isMe){
+  const mr=curChan?myRankIn2(curChan,e.nick):'user';
+  const g=document.createElement('div');g.className='mgrp'+(isMe?' msg-me':'');g.dataset.nick=e.nick;
+  const hdr=document.createElement('div');hdr.className='mg-hdr';
+  const rbadge=mr!=='user'?`<span class="mg-rbadge" style="background:${RBG[mr]};color:${RC[mr]}">${RPFX[mr]}</span>`:'';
+  hdr.innerHTML=`<span class="mg-nick" style="color:${nc(e.nick)}">${e.nick}</span>${rbadge}<span class="mg-time">${e.time}</span>`;
+  hdr.querySelector('.mg-nick').addEventListener('click',()=>{document.getElementById('msg-input').value=e.nick+': ';document.getElementById('msg-input').focus();});
+  g.appendChild(hdr);g.appendChild(mkRow(e,hl));return g;
+}
+function mkRow(e,hl){
+  const row=document.createElement('div');row.className='msg-row'+(hl?' msg-hl':'');
+  row.innerHTML=`<span class="msg-ts">${e.time}</span><span class="msg-text">${esc(e.text)}</span>`;return row;
+}
+function myRankIn2(ch,nick){return joined.get(ch)?.users?.get(nick)||'user';}
 
-    if (cmd === 'join') {
-      const ch = parts[1];
-      if (ch) sendRaw(`JOIN ${ch}`);
-    } else if (cmd === 'part') {
-      const ch = parts[1] || currentChan;
-      sendRaw(`PART ${ch} :${parts.slice(2).join(' ') || 'Leaving'}`);
-    } else if (cmd === 'nick') {
-      sendRaw(`NICK ${parts[1]}`);
-    } else if (cmd === 'topic') {
-      sendRaw(`TOPIC ${currentChan} :${parts.slice(1).join(' ')}`);
-    } else if (cmd === 'me') {
-      sendRaw(`PRIVMSG ${currentChan} :\x01ACTION ${parts.slice(1).join(' ')}\x01`);
-      pushLog(currentChan, { nick: myNick, text: parts.slice(1).join(' '), type: 'action', time: ts() });
-    } else if (cmd === 'msg') {
-      const to   = parts[1];
-      const text = parts.slice(2).join(' ');
-      sendRaw(`PRIVMSG ${to} :${text}`);
-      pushLog(currentChan, { nick: 'srv', text: `→ ${to}: ${text}`, type: 'system', time: ts() });
-    } else if (cmd === 'kick') {
-      sendRaw(`KICK ${currentChan} ${parts[1]} :${parts.slice(2).join(' ') || 'Kicked'}`);
-    } else if (cmd === 'op') {
-      sendRaw(`MODE ${currentChan} +o ${parts[1]}`);
-    } else if (cmd === 'away') {
-      sendRaw(`AWAY :${parts.slice(1).join(' ')}`);
-    } else if (cmd === 'back') {
-      sendRaw('AWAY');
-    } else if (cmd === 'list') {
-      sendRaw('LIST');
-    } else if (cmd === 'whois') {
-      sendRaw(`WHOIS ${parts[1]}`);
-    } else if (cmd === 'quit') {
-      sendRaw(`QUIT :${parts.slice(1).join(' ') || 'Goodbye'}`);
-    } else if (cmd === 'help') {
-      const cmds = [
-        '/join #canal — rejoindre',
-        '/part [#canal] — quitter',
-        '/nick pseudo — changer de pseudo',
-        '/topic texte — changer le topic',
-        '/me action — action /me',
-        '/msg pseudo texte — message privé',
-        '/kick pseudo [raison] — expulser',
-        '/op pseudo — donner les droits op',
-        '/away [message] — marquer absent',
-        '/back — revenir',
-        '/list — lister les canaux',
-        '/whois pseudo — infos sur un utilisateur',
-        '/quit [raison] — quitter',
-      ];
-      for (const c of cmds) {
-        pushLog(currentChan, { nick: 'srv', text: c, type: 'system', time: ts() });
-      }
-    } else {
-      showToast(`Commande inconnue : /${cmd} — /help`);
+function renderMsgs(){
+  const box=document.getElementById('msg-box');box.innerHTML='';
+  const entries=msgLog.get(curChan)||[];
+  if(!entries.length){box.innerHTML='<div id="empty-state" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t2);padding:40px 0;"><div style="font-size:28px;">◈</div><div>Aucun message — dites bonjour !</div></div>';return;}
+  const sep=document.createElement('div');sep.className='day-sep';sep.textContent="Aujourd'hui";box.appendChild(sep);
+  let lastNick=null;
+  for(const e of entries){
+    if(e.type!=='normal'&&e.type!=='action'){const d=document.createElement('div');d.className={sys:'evtsys',join:'evtjoin',part:'evtpart',kick:'evtkick',rank:'evtrank',system:'evtsys'}[e.type]||'evtsys';d.textContent=e.text;box.appendChild(d);lastNick=null;continue;}
+    if(e.type==='action'){const d=document.createElement('div');d.className='evtaction';d.textContent=`* ${e.nick} ${e.text}`;box.appendChild(d);lastNick=null;continue;}
+    const isMe=e.nick===myNick;const hl=!isMe&&e.text.toLowerCase().includes(myNick.toLowerCase());
+    if(e.nick===lastNick){const gs=box.querySelectorAll('.mgrp');if(gs.length)gs[gs.length-1].appendChild(mkRow(e,hl));else box.appendChild(mkGroup(e,hl,isMe));}
+    else box.appendChild(mkGroup(e,hl,isMe));
+    lastNick=e.nick;
+  }
+  scrollBot();
+}
+function clearMsgs(){document.getElementById('msg-box').innerHTML='<div id="empty-state" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t2);padding:40px 0;"><div style="font-size:28px;">◈</div><div>Rejoignez un canal</div></div>';}
+function scrollBot(){const b=document.getElementById('msg-box');b.scrollTop=b.scrollHeight;}
+function switchChan(ch){curChan=ch;unread.delete(ch);renderChanList();renderHeader();renderUsers();renderMsgs();}
+
+// ── Context menu ────────────────────────────────
+function showCtx(ev,nick,chan){
+  ev.preventDefault();ev.stopPropagation();
+  const mr=myRankIn(chan);const tr=myRankIn2(chan,nick);
+  const canMod=rnum(mr)>rnum(tr)&&rnum(mr)>=rnum('halfop');
+  const canOp=rnum(mr)>=rnum('op');
+  const isAdmin=myGrank==='admin'||myGrank==='owner';
+  const ms=mst.get(nick)||{status:'online',statusMsg:''};
+  const si=stList[ms.status]||{emoji:'🟢',label:'En ligne'};
+  const menu=document.getElementById('ctx');
+  menu.innerHTML=`
+    <div class="ctx-hd">
+      <div class="ctx-hd-nick" style="color:${nc(nick)}">${RPFX[tr]||''}${nick}</div>
+      <div class="ctx-hd-sub">${si.emoji} ${ms.statusMsg||si.label} · ${RLABELS[tr]||'Utilisateur'}</div>
+    </div>
+    <div class="ctx-item" id="cx-pm"><span class="ctx-ico">💬</span>Message privé</div>
+    <div class="ctx-item" id="cx-at"><span class="ctx-ico">@</span>Mentionner</div>
+    ${canMod?`
+    <div class="ctx-sec">Modération</div>
+    <div class="ctx-item" id="cx-mute"><span class="ctx-ico">🔇</span>Rendre muet</div>
+    <div class="ctx-item danger" id="cx-kick"><span class="ctx-ico">⚡</span>Expulser du canal</div>
+    ${canOp?`
+    <div class="ctx-item" id="cx-move"><span class="ctx-ico">➡️</span>Déplacer vers…</div>
+    <div class="ctx-item" id="cx-rank"><span class="ctx-ico">★</span>Changer le rang</div>
+    <div class="ctx-item danger" id="cx-ban"><span class="ctx-ico">🚫</span>Bannir du canal</div>`:''}
+    ${isAdmin?`
+    <div class="ctx-sec">Serveur</div>
+    <div class="ctx-item danger" id="cx-gban"><span class="ctx-ico">🔨</span>Ban global</div>`:''}
+    `:''}
+  `;
+  menu.style.display='block';
+  let x=ev.clientX,y=ev.clientY;
+  if(x+200>window.innerWidth)x=window.innerWidth-205;
+  if(y+350>window.innerHeight)y=window.innerHeight-355;
+  menu.style.left=x+'px';menu.style.top=y+'px';
+  menu.querySelector('#cx-pm')?.addEventListener('click',()=>{document.getElementById('msg-input').value=`/msg ${nick} `;document.getElementById('msg-input').focus();closeCtx();});
+  menu.querySelector('#cx-at')?.addEventListener('click',()=>{document.getElementById('msg-input').value+=nick+': ';document.getElementById('msg-input').focus();closeCtx();});
+  menu.querySelector('#cx-mute')?.addEventListener('click',()=>{const d=prompt(`Durée du mute pour ${nick} (secondes, 0=permanent):`,60)||'60';sendRaw(`MUTE ${chan} ${nick} ${d}`);closeCtx();});
+  menu.querySelector('#cx-kick')?.addEventListener('click',()=>{const r=prompt(`Raison d'expulsion de ${nick}:`)||'Expulsé';sendRaw(`KICK ${chan} ${nick} :${r}`);closeCtx();});
+  menu.querySelector('#cx-move')?.addEventListener('click',()=>{const dst=prompt(`Déplacer ${nick} vers quel canal ?`);if(dst){const d=dst.startsWith('#')?dst:'#'+dst;sendRaw(`MOVE ${chan} ${nick} ${d}`);}closeCtx();});
+  menu.querySelector('#cx-rank')?.addEventListener('click',()=>{showRkModal(nick,chan);closeCtx();});
+  menu.querySelector('#cx-ban')?.addEventListener('click',()=>{const r=prompt(`Raison du ban de ${nick}:`)||'Banni';sendRaw(`MODE ${chan} +b ${nick}`);sendRaw(`KICK ${chan} ${nick} :${r}`);closeCtx();});
+  menu.querySelector('#cx-gban')?.addEventListener('click',()=>{const dur=prompt(`Durée du ban global pour ${nick} (minutes, 0=permanent):`,30)||'30';const r=prompt('Raison:')||'Banni';sendRaw(`GBAN ${nick} ${dur} ${r}`);closeCtx();});
+}
+function closeCtx(){document.getElementById('ctx').style.display='none';}
+document.addEventListener('click',closeCtx);
+
+// ── Status ──────────────────────────────────────
+function buildStGrid(){
+  const grid=document.getElementById('st-grid');grid.innerHTML='';
+  for(const key of STORDER){
+    const si=stList[key];if(!si)continue;
+    const d=document.createElement('div');d.className='stopt'+(mySt===key?' active':'');d.dataset.key=key;
+    const ms=mst.get(myNick)||{};const isActive=ms.status===key;
+    d.innerHTML=`<span class="st-emoji">${si.emoji}</span><div><div class="st-name">${si.label}</div></div>`;
+    d.addEventListener('click',()=>{document.querySelectorAll('.stopt').forEach(x=>x.classList.remove('active'));d.classList.add('active');selSt=key;});
+    grid.appendChild(d);
+  }
+  selSt=mySt;
+}
+document.getElementById('my-status-btn').addEventListener('click',()=>{
+  selSt=mySt;buildStGrid();document.getElementById('st-msg').value='';
+  document.getElementById('mo-status').style.display='flex';
+});
+document.getElementById('st-cancel').addEventListener('click',()=>document.getElementById('mo-status').style.display='none');
+document.getElementById('st-confirm').addEventListener('click',()=>{
+  const key=selSt||mySt;const msg=document.getElementById('st-msg').value.trim();
+  sendRaw(`STATUS ${key}${msg?' :'+msg:''}`);
+  document.getElementById('mo-status').style.display='none';
+});
+
+// ── Create channel ──────────────────────────────
+document.getElementById('nc-secured').addEventListener('change',function(){
+  document.getElementById('nc-pass-wrap').style.display=this.checked?'block':'none';
+});
+document.getElementById('btn-create').addEventListener('click',()=>{
+  document.getElementById('nc-name').value='';document.getElementById('nc-topic').value='';
+  document.getElementById('nc-secured').checked=false;document.getElementById('nc-pass').value='';
+  document.getElementById('nc-invite').checked=false;document.getElementById('nc-max').value='0';
+  document.getElementById('nc-pass-wrap').style.display='none';
+  document.getElementById('create-err').className='errmsg';
+  document.getElementById('mo-create').style.display='flex';
+  setTimeout(()=>document.getElementById('nc-name').focus(),80);
+});
+document.getElementById('nc-cancel').addEventListener('click',()=>document.getElementById('mo-create').style.display='none');
+document.getElementById('nc-confirm').addEventListener('click',()=>{
+  let name=document.getElementById('nc-name').value.trim();
+  if(!name){showErr('create-err','Nom requis');return;}
+  if(!name.startsWith('#'))name='#'+name;
+  if(!/^#[^\s,:]{1,49}$/.test(name)){showErr('create-err','Nom invalide (ex: #mon-canal)');return;}
+  const topic=document.getElementById('nc-topic').value.trim();
+  const secured=document.getElementById('nc-secured').checked;
+  const pass=document.getElementById('nc-pass').value;
+  const invite=document.getElementById('nc-invite').checked;
+  const max=parseInt(document.getElementById('nc-max').value)||0;
+  if(secured&&!pass){showErr('create-err','Mot de passe requis');return;}
+  sendRaw(`JOIN ${name}`);
+  setTimeout(()=>{
+    if(topic)sendRaw(`TOPIC ${name} :${topic}`);
+    if(secured&&pass)sendRaw(`MODE ${name} +k ${pass}`);
+    if(invite)sendRaw(`MODE ${name} +i`);
+    if(max>0)sendRaw(`MODE ${name} +l ${max}`);
+  },700);
+  document.getElementById('mo-create').style.display='none';
+});
+
+// ── Join channel ────────────────────────────────
+document.getElementById('btn-join').addEventListener('click',()=>{
+  document.getElementById('jc-name').value='';document.getElementById('jc-pass').value='';
+  buildChanBrowser();document.getElementById('mo-join').style.display='flex';
+  setTimeout(()=>document.getElementById('jc-name').focus(),80);
+});
+function buildChanBrowser(){
+  const el=document.getElementById('chan-browser');el.innerHTML='';
+  if(!joined.size)return;
+  el.innerHTML='<div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t2);padding:8px 0 4px;">Canaux existants</div>';
+  for(const [ch,info] of joined){
+    const d=document.createElement('div');
+    d.style.cssText='padding:6px 10px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t1);';
+    d.innerHTML=`<span style="flex:1">${info.secured?'🔒 ':info.inviteOnly?'👁 ':'📢 '}${ch}</span><span style="font-size:10px;color:var(--t2)">${info.users.size} membres</span>`;
+    d.addEventListener('mouseenter',()=>d.style.background='var(--bg3)');
+    d.addEventListener('mouseleave',()=>d.style.background='');
+    d.addEventListener('click',()=>document.getElementById('jc-name').value=ch);
+    el.appendChild(d);
+  }
+}
+document.getElementById('jc-cancel').addEventListener('click',()=>document.getElementById('mo-join').style.display='none');
+document.getElementById('jc-confirm').addEventListener('click',()=>{
+  let name=document.getElementById('jc-name').value.trim();
+  if(!name)return;
+  if(!name.startsWith('#'))name='#'+name;
+  const pass=document.getElementById('jc-pass').value.trim();
+  sendRaw(`JOIN ${name}${pass?' '+pass:''}`);
+  document.getElementById('mo-join').style.display='none';
+});
+
+// ── Rank modal ──────────────────────────────────
+function showRkModal(nick,chan){
+  rkTarget=nick;rkChan=chan;selRank=myRankIn2(chan,nick);
+  document.getElementById('rank-sub').textContent=`Changer le rang de ${nick} dans ${chan}`;
+  const list=document.getElementById('rank-list');list.innerHTML='';
+  const mr=myRankIn(chan);
+  const assignable=RORDER.filter(r=>rnum(r)<rnum(mr));
+  for(const r of assignable){
+    const d=document.createElement('div');d.className='rkopt'+(selRank===r?' active':'');d.dataset.rank=r;
+    d.innerHTML=`<div class="rkav" style="background:${RBG[r]||'var(--bg5)'};color:${RC[r]||'var(--t1)'}">${RPFX[r]||'·'}</div>
+      <div><div class="rk-name" style="color:${RC[r]||'var(--t0)'}">${RLABELS[r]}</div><div class="rk-desc">${RDESC[r]}</div></div>`;
+    d.addEventListener('click',()=>{document.querySelectorAll('.rkopt').forEach(x=>x.classList.remove('active'));d.classList.add('active');selRank=r;});
+    list.appendChild(d);
+  }
+  document.getElementById('mo-rank').style.display='flex';
+}
+document.getElementById('rank-cancel').addEventListener('click',()=>document.getElementById('mo-rank').style.display='none');
+document.getElementById('rank-confirm').addEventListener('click',()=>{
+  if(!selRank||!rkTarget||!rkChan)return;
+  const mm={owner:'+q',admin:'+a',op:'+o',halfop:'+h',voice:'+v',user:'-o'};
+  sendRaw(`MODE ${rkChan} ${mm[selRank]||'-o'} ${rkTarget}`);
+  document.getElementById('mo-rank').style.display='none';
+});
+
+// ── Invite modal ────────────────────────────────
+function showInvModal(){
+  invSel=null;
+  document.getElementById('inv-ch-lbl').textContent=curChan;
+  const list=document.getElementById('inv-list');list.innerHTML='';
+  const chanUsers=joined.get(curChan)?.users||new Map();
+  const allNicks=new Set();
+  for(const info of joined.values())for(const n of info.users.keys())allNicks.add(n);
+  let added=0;
+  for(const n of allNicks){
+    if(!chanUsers.has(n)){
+      const d=document.createElement('div');d.className='inv-user';d.dataset.nick=n;
+      d.innerHTML=`<div style="width:22px;height:22px;border-radius:50%;background:${nc(n)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">${n[0].toUpperCase()}</div><span style="font-size:12px">${n}</span>`;
+      d.addEventListener('click',()=>{document.querySelectorAll('.inv-user').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');invSel=n;});
+      list.appendChild(d);added++;
+    }
+  }
+  if(!added){
+    const p=prompt(`Pseudo de l'utilisateur à inviter sur ${curChan} :`);
+    if(p){sendRaw(`INVITE ${p} ${curChan}`);return;}
+    return;
+  }
+  document.getElementById('mo-invite').style.display='flex';
+}
+document.getElementById('inv-cancel').addEventListener('click',()=>document.getElementById('mo-invite').style.display='none');
+document.getElementById('inv-confirm').addEventListener('click',()=>{
+  if(invSel)sendRaw(`INVITE ${invSel} ${curChan}`);
+  document.getElementById('mo-invite').style.display='none';
+});
+
+// ── Topic ───────────────────────────────────────
+document.getElementById('hdr-topic').addEventListener('click',()=>{
+  const info=joined.get(curChan);if(!info)return;
+  if(rnum(myRankIn(curChan))<rnum('halfop')){toast('Vous devez être au moins demi-opérateur','warn');return;}
+  const t=prompt('Nouveau topic :',info.topic||'');
+  if(t!==null)sendRaw(`TOPIC ${curChan} :${t}`);
+});
+
+// ── Chan manage ─────────────────────────────────
+function manageChan(){
+  const info=joined.get(curChan);if(!info)return;
+  if(info.secured){
+    if(confirm(`Supprimer le mot de passe de ${curChan} ?`))sendRaw(`MODE ${curChan} -k`);
+  } else {
+    const pass=prompt(`Ajouter un mot de passe à ${curChan} (laisser vide pour annuler) :`);
+    if(pass)sendRaw(`MODE ${curChan} +k ${pass}`);
+  }
+}
+function chanSettings(){
+  const info=joined.get(curChan);if(!info)return;
+  const inv=info.inviteOnly;
+  if(confirm(`${inv?'Ouvrir':'Fermer'} ${curChan} aux invitations uniquement ?`))sendRaw(`MODE ${curChan} ${inv?'-i':'+i'}`);
+}
+
+// ── Input ───────────────────────────────────────
+function send(){
+  const input=document.getElementById('msg-input');
+  const raw=input.value.trim();if(!raw)return;input.value='';
+  if(raw.startsWith('/')){
+    const parts=raw.slice(1).split(' ');const cmd=parts[0].toLowerCase();
+    const rest=parts.slice(1);
+    switch(cmd){
+      case 'join':{const ch=rest[0];if(ch)sendRaw(`JOIN ${ch.startsWith('#')?ch:'#'+ch}${rest[1]?' '+rest[1]:''}`);}break;
+      case 'part':sendRaw(`PART ${rest[0]||curChan} :${rest.slice(1).join(' ')||'Leaving'}`);break;
+      case 'nick':sendRaw(`NICK ${rest[0]}`);break;
+      case 'topic':sendRaw(`TOPIC ${curChan} :${rest.join(' ')}`);break;
+      case 'me':sendRaw(`PRIVMSG ${curChan} :\x01ACTION ${rest.join(' ')}\x01`);pushMsg(curChan,{nick:myNick,text:rest.join(' '),type:'action',time:ts()});break;
+      case 'msg':sendRaw(`PRIVMSG ${rest[0]} :${rest.slice(1).join(' ')}`);break;
+      case 'kick':sendRaw(`KICK ${curChan} ${rest[0]} :${rest.slice(1).join(' ')||'Expulsé'}`);break;
+      case 'ban':sendRaw(`MODE ${curChan} +b ${rest[0]}`);if(rest[1])sendRaw(`KICK ${curChan} ${rest[0]} :${rest.slice(1).join(' ')}`);break;
+      case 'unban':sendRaw(`MODE ${curChan} -b ${rest[0]}`);break;
+      case 'mute':sendRaw(`MUTE ${curChan} ${rest[0]} ${rest[1]||0}`);break;
+      case 'unmute':sendRaw(`UNMUTE ${curChan} ${rest[0]}`);break;
+      case 'move':sendRaw(`MOVE ${curChan} ${rest[0]} ${rest[1]} :${rest.slice(2).join(' ')||'Déplacé'}`);break;
+      case 'op':sendRaw(`MODE ${curChan} +o ${rest[0]}`);break;
+      case 'deop':sendRaw(`MODE ${curChan} -o ${rest[0]}`);break;
+      case 'voice':sendRaw(`MODE ${curChan} +v ${rest[0]}`);break;
+      case 'halfop':sendRaw(`MODE ${curChan} +h ${rest[0]}`);break;
+      case 'invite':sendRaw(`INVITE ${rest[0]} ${rest[1]||curChan}`);break;
+      case 'status':sendRaw(`STATUS ${rest[0]} :${rest.slice(1).join(' ')}`);break;
+      case 'away':sendRaw(`AWAY :${rest.join(' ')}`);sendRaw(`STATUS away :${rest.join(' ')}`);break;
+      case 'back':sendRaw('AWAY');sendRaw('STATUS online');break;
+      case 'oper':sendRaw(`OPER ${rest[0]}`);break;
+      case 'gban':sendRaw(`GBAN ${rest[0]} ${rest[1]||0} ${rest.slice(2).join(' ')||'Banni'}`);break;
+      case 'gunban':sendRaw(`GUNBAN ${rest[0]}`);break;
+      case 'whois':sendRaw(`WHOIS ${rest[0]}`);break;
+      case 'list':sendRaw('LIST');break;
+      case 'quit':sendRaw(`QUIT :${rest.join(' ')||'Goodbye'}`);break;
+      case 'mode':sendRaw(`MODE ${rest[0]} ${rest.slice(1).join(' ')}`);break;
+      case 'help':
+        [
+          '══ IRCnet — Aide ══',
+          '─ Canaux: /join #ch [pass]  /part  /list  /topic texte',
+          '─ Messages: /msg pseudo texte  /me action',
+          '─ Statuts: /status CODE [msg]  /away [msg]  /back',
+          '  Codes: online brb away busy wc eating gaming coding sleep custom',
+          '─ Modération: /kick pseudo [raison]  /ban pseudo [raison]  /unban pseudo',
+          '  /mute pseudo [sec]  /unmute pseudo  /move pseudo #dest [raison]',
+          '─ Rangs: /op /deop /voice /halfop pseudo  /invite pseudo [#ch]',
+          '─ Admin: /oper pass  /gban pseudo [min] [raison]  /gunban pseudo',
+          '─ Autre: /nick pseudo  /whois pseudo  /mode  /quit',
+        ].forEach(c=>pushEvt(curChan,'sys',c));
+        break;
+      default:toast(`Commande inconnue: /${cmd} — essayez /help`,'warn');
     }
     return;
   }
-
-  if (!currentChan) { showToast('Rejoignez un canal d\'abord !'); return; }
-  sendRaw(`PRIVMSG ${currentChan} :${raw}`);
-  pushLog(currentChan, { nick: myNick, text: raw, type: 'normal', time: ts() });
+  if(!curChan){toast('Rejoignez un canal d\'abord !','warn');return;}
+  sendRaw(`PRIVMSG ${curChan} :${raw}`);
+  pushMsg(curChan,{nick:myNick,text:raw,type:'normal',time:ts()});
 }
 
-// ── Event bindings ─────────────────────────────
-document.getElementById('btn-send').addEventListener('click', send);
-document.getElementById('msg-input').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
-
-document.getElementById('btn-join').addEventListener('click', () => {
-  const ch = prompt('Canal à rejoindre (ex: #général)');
-  if (ch) sendRaw(`JOIN ${ch.startsWith('#') ? ch : '#' + ch}`);
+// ── Login ───────────────────────────────────────
+document.getElementById('btn-connect').addEventListener('click',()=>{
+  const nick=document.getElementById('i-nick').value.trim();
+  const chan=document.getElementById('i-chan').value.trim()||'#général';
+  if(!nick){showErr('login-err','Pseudo requis');return;}
+  if(!/^[a-zA-Z_\-\[\]\\^{}|`][a-zA-Z0-9_\-\[\]\\^{}|`]{0,29}$/.test(nick)){showErr('login-err','Pseudo invalide (lettres, chiffres, _ - uniquement)');return;}
+  document.getElementById('login-err').className='errmsg';
+  connect(nick,chan);
 });
+document.getElementById('i-nick').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('i-chan').focus();});
+document.getElementById('i-chan').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btn-connect').click();});
 
-document.getElementById('btn-nick').addEventListener('click', () => {
-  const n = prompt('Nouveau pseudo :');
-  if (n) sendRaw(`NICK ${n}`);
-});
+// ── Send ────────────────────────────────────────
+document.getElementById('btn-send').addEventListener('click',send);
+document.getElementById('msg-input').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
 
-document.getElementById('btn-connect').addEventListener('click', () => {
-  const nick = document.getElementById('inp-nick').value.trim();
-  const chan  = document.getElementById('inp-chan').value.trim() || '#général';
-  const err   = document.getElementById('login-err');
-  if (!nick) { err.textContent = 'Le pseudo est requis.'; err.style.display = 'block'; return; }
-  if (!/^[a-zA-Z_\-\[\]\\^{}|`][a-zA-Z0-9_\-\[\]\\^{}|`]{0,29}$/.test(nick)) {
-    err.textContent = 'Pseudo invalide (lettres, chiffres, _ - [ ] uniquement).';
-    err.style.display = 'block'; return;
-  }
-  err.style.display = 'none';
-  connect(nick, chan.startsWith('#') ? chan : '#' + chan);
-});
+// ── Helpers ─────────────────────────────────────
+function toast(html,type=''){const c=document.getElementById('toasts');const t=document.createElement('div');t.className='toast '+(type||'');t.innerHTML=html;c.appendChild(t);setTimeout(()=>t.remove(),3200);}
+function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.className='errmsg show';}
 
-document.getElementById('inp-nick').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('inp-chan').focus();
-});
-document.getElementById('inp-chan').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btn-connect').click();
-});
+// Fermer modals sur overlay click
+document.querySelectorAll('.mo').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o&&o.id!=='mo-login')o.style.display='none';});});
 
-// Ping keepalive
-setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) sendRaw('PING :keepalive'); }, 60000);
+// Keepalive
+setInterval(()=>{if(ws&&ws.readyState===1)sendRaw('PING :keepalive');},60000);
 </script>
 </body>
 </html>
