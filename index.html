@@ -638,9 +638,19 @@ function connect(nick,chan){
   const proto=location.protocol==='https:'?'wss:':'ws:';
   ws=new WebSocket(`${proto}//${location.host}/ws`);
   ws.onopen=()=>{setConn(true);sendRaw(`NICK ${nick}`);sendRaw(`USER ${nick} 0 * :${nick}`);if(chan)setTimeout(()=>sendRaw(`JOIN ${chan}`),600);};
-  ws.onmessage=e=>{try{handle(JSON.parse(e.data));}catch{}};
-  ws.onclose=()=>{setConn(false);toast('Connexion perdue','danger');};
-  ws.onerror=()=>setConn(false);
+  ws.onmessage=e=>{try{const d=JSON.parse(e.data);handle(d);}catch(err){console.error('handle error:',err,e.data?.slice?.(0,200));}};
+  ws.onclose=()=>{
+    setConn(false);
+    const lbtn=document.getElementById('lbtn');
+    if(lbtn){lbtn.textContent='Connexion →';lbtn.disabled=false;}
+    if(document.getElementById('login').style.display!=='none'){
+      document.getElementById('lerr').textContent='Connexion impossible. Vérifiez que le serveur est démarré.';
+      document.getElementById('lerr').style.display='block';
+    } else {
+      toast('Connexion au serveur perdue','danger');
+    }
+  };
+  ws.onerror=(e)=>{setConn(false);document.getElementById('lerr').textContent='Impossible de se connecter au serveur. Vérifiez que le serveur tourne.';document.getElementById('lerr').style.display='block';};
 }
 function sendRaw(l){if(ws&&ws.readyState===1)ws.send(JSON.stringify({raw:l}));}
 function sendWS(obj){if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj));}
@@ -718,7 +728,7 @@ function handle(obj){
   const{cmd,params,nick}=p;
 
   switch(cmd){
-    case '001':
+    case '001': {
       myNick=params[0]||myNick;
       document.getElementById('my-nick').textContent=myNick;
       const av=document.getElementById('my-av');av.textContent=ni(myNick);av.style.background=nc(myNick);
@@ -726,9 +736,9 @@ function handle(obj){
       document.getElementById('msg-inp').disabled=false;
       document.getElementById('btn-send').disabled=false;
       document.getElementById('login').style.display='none';
-      // Request XDCC list
       sendWS({type:'xdcc_list'});
       break;
+    }
     case '332': if(joined.has(params[1])){joined.get(params[1]).topic=params[2]||'';if(params[1]===curChan)updHdr();} break;
     case '353':{
       const ch=params[2];
@@ -1470,7 +1480,11 @@ document.getElementById('lbtn').onclick=()=>{
   if(!nick){err.textContent='Pseudo requis.';err.style.display='block';return;}
   if(!/^[a-zA-Z_\-\[\]\\^{}|`][a-zA-Z0-9_\-\[\]\\^{}|`]{0,29}$/.test(nick)){err.textContent='Pseudo invalide.';err.style.display='block';return;}
   err.style.display='none';myNick=nick;
+  const btn=document.getElementById('lbtn');
+  btn.textContent='Connexion…';btn.disabled=true;
   connect(nick,chan.startsWith('#')?chan:'#'+chan);
+  // Re-enable after timeout in case of failure
+  setTimeout(()=>{if(document.getElementById('login').style.display!=='none'){btn.textContent='Connexion →';btn.disabled=false;}},5000);
 };
 document.getElementById('lnick').onkeydown=e=>{if(e.key==='Enter')document.getElementById('lchan').focus();};
 document.getElementById('lchan').onkeydown=e=>{if(e.key==='Enter')document.getElementById('lbtn').click();};

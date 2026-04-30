@@ -168,7 +168,7 @@ class Channel {
 
 // ── Helpers ────────────────────────────────────────────────────
 function validNick(n) { return /^[a-zA-Z_\-\[\]\\^{}|`][a-zA-Z0-9_\-\[\]\\^{}|`]{0,29}$/.test(n); }
-function validChan(n) { return /^#[^\s,:]{1,49}$/.test(n); }
+function validChan(n) { return n && n.startsWith("#") && n.length >= 2 && n.length <= 50 && !/[\s,:\x00\x07]/.test(n); }
 function hashPass(p)  { return crypto.createHash('sha256').update(p+'ircnet_v3').digest('hex'); }
 function nowStr()     { return new Date().toLocaleTimeString('fr-FR'); }
 
@@ -1124,7 +1124,7 @@ httpServer.on('upgrade',(req,socket)=>{
           if(ctcpM){handleCTCP(user,ctcpM[1],ctcpM[2]);}
           else{dispatch(user,raw);}
         }
-      }catch{dispatch(user,t);}
+      }catch(e){ if(t && !t.startsWith("{")) dispatch(user,t); }
     }
   });
   socket.on('close',()=>handleQUIT(user,'Connection closed'));
