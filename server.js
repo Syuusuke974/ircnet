@@ -15,7 +15,7 @@ const crypto = require('crypto');
 
 const PORT        = parseInt(process.env.PORT)     || 3000;
 const IRC_PORT    = parseInt(process.env.IRC_PORT) || 6667;
-const SERVER_NAME = process.env.SERVER_NAME        || 'irc.localnet';
+const SERVER_NAME = (process.env.SERVER_NAME || 'irc.localnet').replace(/^https?:\/\//,'').replace(/\/$/,'');
 const ADMIN_PASS  = process.env.ADMIN_PASS         || 'admin1234';
 const BOT_NICK    = process.env.BOT_NICK           || 'IRCbot';
 
@@ -1131,10 +1131,12 @@ httpServer.on('upgrade',(req,socket)=>{
   socket.on('error',()=>handleQUIT(user,'Socket error'));
 });
 
-httpServer.listen(PORT,()=>{
+httpServer.listen(PORT,'0.0.0.0',()=>{
   console.log(`\n  IRCnet v3 + DCC/XDCC`);
-  console.log(`  ├─ Web  : http://localhost:${PORT}`);
-  console.log(`  ├─ WS   : ws://localhost:${PORT}/ws`);
+  console.log(`  ├─ PORT : ${PORT}`);
+  console.log(`  ├─ NAME : ${SERVER_NAME}`);
+  console.log(`  ├─ Web  : http://0.0.0.0:${PORT}`);
+  console.log(`  ├─ WS   : ws://0.0.0.0:${PORT}/ws`);
   console.log(`  ├─ IRC  : irc://localhost:${IRC_PORT}`);
   console.log(`  ├─ Bot  : ${BOT_NICK}`);
   console.log(`  ├─ DCC  : POST /dcc/upload  GET /dcc/download?token=`);
