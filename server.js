@@ -223,6 +223,48 @@ switch(cmd){
 }
 
 // ── DCC / XDCC ────────────────────────────────────────────────
+// ── Persistence ──────────────────────────────────────────────
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+const PACKS_DIR = path.join(DATA_DIR, 'packs');
+const META_FILE = path.join(DATA_DIR, 'xdcc_meta.json');
+
+// Create directories if needed
+[DATA_DIR, PACKS_DIR].forEach(d => { try { fs.mkdirSync(d, { recursive:true }); } catch{} });
+
+function saveMeta() {
+  const meta = [...xdccPacks.values()].map(p => ({
+    id: p.id, owner: p.owner, filename: p.filename,
+    size: p.size, mimetype: p.mimetype, description: p.description,
+    gets: p.gets, added: p.added,
+    file: path.join(PACKS_DIR, p.id + '_' + p.filename.replace(/[^a-zA-Z0-9._-]/g, '_'))
+  }));
+  try { fs.writeFileSync(META_FILE, JSON.stringify({nextId: xdccNextId, packs: meta}, null, 2)); }
+  catch(e) { console.warn('[xdcc] saveMeta error:', e.message); }
+}
+
+function loadPacks() {
+  try {
+    if (!fs.existsSync(META_FILE)) return;
+    const raw = JSON.parse(fs.readFileSync(META_FILE, 'utf8'));
+    xdccNextId = raw.nextId || 1;
+    for (const m of (raw.packs || [])) {
+      try {
+        const data = fs.readFileSync(m.file);
+        const pack = new XDCCPack(m.owner, m.filename, m.size, m.mimetype, data, m.description);
+        pack.id   = m.id;
+        pack.gets = m.gets || 0;
+        pack.added= m.added || Date.now();
+        xdccPacks.set(pack.id, pack);
+      } catch(e) { console.warn('[xdcc] Could not load pack', m.id, ':', e.message); }
+    }
+    console.log(`[xdcc] Loaded ${xdccPacks.size} pack(s) from disk`);
+  } catch(e) { console.warn('[xdcc] loadPacks error:', e.message); }
+}
+
+// Auto-save every 5 minutes
+setInterval(saveMeta, 5 * 60 * 1000);
+
+// ── DCC / XDCC ────────────────────────────────────────────────
 const xdccPacks=new Map();const dccOffers=new Map();let xdccNextId=1;
 class XDCCPack{constructor(owner,filename,size,mimetype,data,description){this.id=String(xdccNextId++);this.owner=owner;this.filename=filename;this.size=size;this.mimetype=mimetype;this.data=data;this.description=description||'';this.gets=0;this.added=Date.now();}toPublic(){return{id:this.id,owner:this.owner,filename:this.filename,size:this.size,mimetype:this.mimetype,description:this.description,gets:this.gets,added:this.added};}}
 function mkToken(){return crypto.randomBytes(12).toString('hex');}
@@ -231,8 +273,37 @@ function bcastXDCC(){const p=[...xdccPacks.values()].map(p=>p.toPublic());for(co
 function xdccNotice(nick,text){const u=users.get(nick);if(u)u.send({raw:`:XDCCbot!xdcc@${SERVER_NAME} NOTICE ${nick} :${text}`});}
 function xdccList(nick){xdccNotice(nick,'═══ Packs XDCC ═══');if(!xdccPacks.size){xdccNotice(nick,'Aucun pack.');return;}for(const p of xdccPacks.values()){const sz=p.size<1048576?(p.size/1024).toFixed(1)+'KB':(p.size/1048576).toFixed(2)+'MB';xdccNotice(nick,`#${p.id.padStart(3)} [${sz.padStart(8)}] ${p.filename} — ${p.description||'—'} (${p.gets} DL)`);}const u=users.get(nick);if(u)u.send({type:'xdcc_list',packs:[...xdccPacks.values()].map(p=>p.toPublic())});}
 function xdccGet(nick,packId){const u=users.get(nick);if(!u)return;const pack=xdccPacks.get(String(packId));if(!pack){xdccNotice(nick,`Pack #${packId} introuvable.`);return;}pack.gets++;const token=mkToken();dccOffers.set(token,{token,type:'xdcc',from:'XDCCbot',to:nick,filename:pack.filename,size:pack.size,mimetype:pack.mimetype,data:pack.data,created:Date.now()});xdccNotice(nick,`Envoi: ${pack.filename} — acceptez le transfert DCC.`);u.send({type:'dcc_offer',token,from:'XDCCbot',filename:pack.filename,size:pack.size,mimetype:pack.mimetype,packId:pack.id});}
-function xdccAdd(user,filename,size,mimetype,data,description){const pack=new XDCCPack(user.nick,filename,size,mimetype,data,description);xdccPacks.set(pack.id,pack);srvNotice(user,`Pack XDCC #${pack.id} ajouté.`);bcastXDCC();return pack;}
-function xdccRemove(user,packId){const pack=xdccPacks.get(String(packId));if(!pack){srvNotice(user,`Pack #${packId} introuvable.`);return;}if(pack.owner!==user.nick&&!user.isAdmin()){srvNotice(user,'Permission refusée.');return;}xdccPacks.delete(String(packId));srvNotice(user,`Pack #${packId} supprimé.`);bcastXDCC();}
+function xdccAdd(user,filename,size,mimetype,data,description){
+  const pack=new XDCCPack(user.nick,filename,size,mimetype,data,description);
+  xdccPacks.set(pack.id,pack);
+  // Save to disk
+  try {
+    const safeName = filename.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const filePath = path.join(PACKS_DIR, pack.id + '_' + safeName);
+    fs.writeFileSync(filePath, data);
+    saveMeta();
+    console.log(`[xdcc] Pack #${pack.id} saved: ${filePath} (${(data.length/1024).toFixed(1)}KB)`);
+  } catch(e) { console.warn('[xdcc] Save error:', e.message); }
+  srvNotice(user,`Pack XDCC #${pack.id} ajouté et sauvegardé.`);
+  bcastXDCC();
+  return pack;
+}
+function xdccRemove(user,packId){
+  const pack=xdccPacks.get(String(packId));
+  if(!pack){srvNotice(user,`Pack #${packId} introuvable.`);return;}
+  if(pack.owner!==user.nick&&!user.isAdmin()){srvNotice(user,'Permission refusée.');return;}
+  // Delete file from disk
+  try {
+    const safeName = pack.filename.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const filePath = path.join(PACKS_DIR, pack.id + '_' + safeName);
+    if(fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    console.log(`[xdcc] Pack #${pack.id} deleted from disk`);
+  } catch(e) { console.warn('[xdcc] Delete error:', e.message); }
+  xdccPacks.delete(String(packId));
+  saveMeta();
+  srvNotice(user,`Pack #${packId} supprimé.`);
+  bcastXDCC();
+}
 function dccSend(user,targetNick,filename,size,mimetype,b64data){const dest=users.get(targetNick);if(!dest){srvNotice(user,`${targetNick} introuvable.`);return;}const data=Buffer.from(b64data,'base64');const token=mkToken();dccOffers.set(token,{token,type:'dcc',from:user.nick,to:targetNick,filename,size,mimetype,data,created:Date.now()});dest.send({type:'dcc_offer',token,from:user.nick,filename,size,mimetype});if(dest.type==='irc')dest.send({raw:`:${user.hostmask()} PRIVMSG ${targetNick} :\x01DCC SEND ${filename} 0 0 ${size}\x01`});srvNotice(user,`Offre DCC envoyée à ${targetNick}.`);}
 function handleCTCP(user,target,ctcpText){if(ctcpText==='VERSION')user.send({raw:`:${SERVER_NAME} NOTICE ${user.nick} :\x01VERSION IRCnet/3.0\x01`});if(ctcpText==='XDCC LIST')xdccList(user.nick);if(ctcpText.startsWith('XDCC SEND ')||ctcpText.startsWith('XDCC GET ')){const id=ctcpText.split(' ')[2]?.replace('#','');if(id)xdccGet(user.nick,id);}}
 
@@ -250,7 +321,7 @@ const httpServer=http.createServer((req,res)=>{
   const rawUrl=req.url;const url=rawUrl.split('?')[0];const qs=new URLSearchParams(rawUrl.includes('?')?rawUrl.slice(rawUrl.indexOf('?')+1):'');
   // CORS preflight
   if(req.method==='OPTIONS'){corsH(res);res.writeHead(204);res.end();return;}
-  if(url==='/health'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({status:'ok',users:users.size,channels:channels.size,uptime:Math.floor((Date.now()-botStart)/1000)}));return;}
+  if(url==='/health'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({status:'ok',users:users.size,channels:channels.size,xdccPacks:xdccPacks.size,dataDir:DATA_DIR,uptime:Math.floor((Date.now()-botStart)/1000)}));return;}
   if(url==='/api/channels'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify([...channels.values()].map(c=>c.toJSON())));return;}
   if(url==='/api/bot'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(getBotCfg()));return;}
   if(url==='/api/xdcc'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify([...xdccPacks.values()].map(p=>p.toPublic())));return;}
@@ -293,6 +364,9 @@ httpServer.on('upgrade',(req,socket)=>{
 });
 
 // ── Start ─────────────────────────────────────────────────────
+// Load persisted packs
+loadPacks();
+
 httpServer.listen(PORT,'0.0.0.0',()=>{
   console.log(`[ready] IRCnet v3 listening on 0.0.0.0:${PORT}`);
   console.log(`[ready] SERVER_NAME=${SERVER_NAME}`);
