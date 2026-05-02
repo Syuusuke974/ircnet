@@ -325,6 +325,41 @@ const httpServer=http.createServer((req,res)=>{
   if(url==='/api/channels'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify([...channels.values()].map(c=>c.toJSON())));return;}
   if(url==='/api/bot'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(getBotCfg()));return;}
   if(url==='/api/xdcc'){corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify([...xdccPacks.values()].map(p=>p.toPublic())));return;}
+  // XDCC stream/download by pack ID (supports Range for video seeking)
+  if(url.startsWith('/xdcc/stream/')||url.startsWith('/xdcc/dl/')){
+    const packId=url.split('/')[3];
+    const pack=xdccPacks.get(String(packId));
+    if(!pack||!pack.data){res.writeHead(404);res.end('Pack not found');return;}
+    const data=pack.data;
+    const total=data.length;
+    const isDownload=url.startsWith('/xdcc/dl/');
+    const rangeHeader=req.headers['range'];
+    corsH(res);
+    res.setHeader('Accept-Ranges','bytes');
+    res.setHeader('Content-Type',pack.mimetype||'application/octet-stream');
+    if(isDownload){
+      res.setHeader('Content-Disposition',`attachment; filename="${encodeURIComponent(pack.filename)}"`);
+    } else {
+      res.setHeader('Content-Disposition',`inline; filename="${encodeURIComponent(pack.filename)}"`);
+    }
+    if(rangeHeader){
+      const parts=rangeHeader.replace(/bytes=/,'').split('-');
+      const start=parseInt(parts[0],10);
+      const end=parts[1]?parseInt(parts[1],10):total-1;
+      const chunkSize=end-start+1;
+      res.writeHead(206,{
+        'Content-Range':`bytes ${start}-${end}/${total}`,
+        'Content-Length':chunkSize,
+      });
+      res.end(data.slice(start,end+1));
+    } else {
+      res.setHeader('Content-Length',total);
+      res.writeHead(200);
+      res.end(data);
+    }
+    return;
+  }
+
   if(url==='/dcc/download'){const token=qs.get('token');const offer=token?dccOffers.get(token):null;if(!offer||!offer.data){res.writeHead(404);res.end('Not found');return;}corsH(res);res.writeHead(200,{'Content-Type':offer.mimetype||'application/octet-stream','Content-Disposition':`attachment; filename="${encodeURIComponent(offer.filename)}"`, 'Content-Length':offer.data.length});res.end(offer.data);dccOffers.delete(token);return;}
   if(url==='/dcc/upload'&&req.method==='POST'){let body='';req.on('data',d=>{body+=d.toString();if(body.length>60*1024*1024)req.destroy();});req.on('end',()=>{try{const j=JSON.parse(body);const user=users.get(j.nick);if(!user){res.writeHead(403);res.end('Not connected');return;}if(j.target){dccSend(user,j.target,j.filename,j.size||0,j.mimetype||'application/octet-stream',j.data);}else{xdccAdd(user,j.filename,j.size||0,j.mimetype||'application/octet-stream',Buffer.from(j.data,'base64'),j.description||'');}corsH(res);res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({ok:true}));}catch(e){res.writeHead(400);res.end('Bad request');}});return;}
   const filePath=(url==='/'||url==='/index.html')?'index.html':url.slice(1);
